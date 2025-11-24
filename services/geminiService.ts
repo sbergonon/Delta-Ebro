@@ -3,7 +3,7 @@ import { UserPreferences, ItineraryResult, GroundingSource, Transport, Itinerary
 import { TRANSLATIONS } from "../constants";
 
 const getAiClient = () => {
-  const apiKey = process.env.API_KEY;
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("API Key not found. Please ensure the API_KEY environment variable is set in your project configuration.");
   }
