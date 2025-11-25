@@ -9,90 +9,47 @@ const isValidKey = (key: string | undefined): boolean => {
     return key.startsWith("AIza") && key.length > 35;
 };
 
-const getApiKeyInfo = () => {
-  // We will search multiple locations for a valid key.
-  // Priority: 
-  // 1. Valid VITE_GEMINI_API_KEY
-  // 2. Valid API_KEY
-  // 3. Valid process.env.API_KEY
+const getApiKey = (): string => {
+  // Vite injects the variable at build time.
+  // We accept VITE_GEMINI_API_KEY as the standard.
+  // @ts-ignore
+  let key = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
   
-  const candidates: { val: string | undefined, src: string }[] = [];
+  // Cleaning: Remove whitespace and accidental quotes
+  key = key ? key.trim().replace(/^['"]|['"]$/g, '') : "";
 
-  // Source 1: Vite standard env
-  try {
-      // @ts-ignore
-      if (typeof import.meta !== 'undefined' && import.meta.env) {
-          // @ts-ignore
-          candidates.push({ val: import.meta.env.VITE_GEMINI_API_KEY, src: "VITE_GEMINI_API_KEY" });
-          // @ts-ignore
-          candidates.push({ val: import.meta.env.GEMINI_API_KEY, src: "GEMINI_API_KEY" });
-          // @ts-ignore
-          candidates.push({ val: import.meta.env.API_KEY, src: "API_KEY" });
-      }
-  } catch (e) {}
-
-  // Source 2: Process env (Node/Webpack/Some Vite configs)
-  try {
-      if (typeof process !== 'undefined' && process.env) {
-          candidates.push({ val: process.env.API_KEY, src: "process.env.API_KEY" });
-          candidates.push({ val: process.env.VITE_GEMINI_API_KEY, src: "process.env.VITE_GEMINI_API_KEY" });
-      }
-  } catch (e) {}
-
-  // Search for the first VALID candidate
-  for (const c of candidates) {
-      if (!c.val) continue;
-      
-      let key = c.val.trim();
-      
-      // Clean up common paste errors like 'KEY=AIza...'
-      if (key.includes('=')) {
-          const parts = key.split('=');
-          key = parts[parts.length - 1].trim();
-      }
-      // Clean quotes
-      if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
-          key = key.substring(1, key.length - 1);
-      }
-
-      // Check validation
-      if (isValidKey(key)) {
-          return { apiKey: key, source: c.src, status: 'valid' };
-      }
+  // 1. Check if missing
+  if (!key) {
+      throw new Error("Falta la API Key. Asegúrate de que 'VITE_GEMINI_API_KEY' está definida en las variables de entorno de Render.");
   }
 
-  // If we are here, we didn't find a valid key. 
-  // Return the first non-empty placeholder we found for debugging purposes.
-  const placeholder = candidates.find(c => c.val && c.val.length > 0);
-  if (placeholder) {
-      return { apiKey: placeholder.val, source: placeholder.src, status: 'invalid_placeholder' };
+  // 2. Check if it's a placeholder (The Common Error)
+  // If this triggers, it means a .env file in GitHub is overriding the Render config.
+  if (key.includes("PLACEHOLDER") || key.includes("tu_clave_aqui") || key.startsWith("YOUR_")) {
+      throw new Error(`
+        [ERROR CRÍTICO: ARCHIVO .ENV DETECTADO]
+        
+        La app está leyendo una clave falsa: "${key.substring(0, 10)}..."
+        
+        CAUSA:
+        Tienes un archivo llamado '.env' o '.env.local' en tu GitHub que está sobrescribiendo la configuración de Render.
+        
+        SOLUCIÓN:
+        1. Ve a GitHub y BORRA el archivo '.env' o '.env.local'.
+        2. En Render, haz 'Manual Deploy' > 'Clear build cache & deploy'.
+      `);
   }
 
-  return { apiKey: undefined, source: "None", status: 'missing' };
+  // 3. Validate format
+  if (!isValidKey(key)) {
+       throw new Error(`La API Key no parece válida (Longitud: ${key.length}). Asegúrate de que empieza por 'AIza'. Valor actual: ${key.substring(0,5)}...`);
+  }
+
+  return key;
 };
 
 const getAiClient = () => {
-  const { apiKey, source, status } = getApiKeyInfo();
-  
-  if (status !== 'valid' || !apiKey) {
-      let msg = "No se ha encontrado una API Key válida.";
-      
-      if (status === 'invalid_placeholder') {
-          msg = `[ERROR CRÍTICO] La aplicación está leyendo una clave incorrecta (${source}).
-          
-          Valor detectado: ${apiKey?.substring(0, 10)}... (Parece un texto de relleno/placeholder).
-          
-          SOLUCIÓN PARA RENDER:
-          1. Ve a "Environment" en tu Dashboard de Render.
-          2. Asegúrate de tener 'VITE_GEMINI_API_KEY' con el valor 'AIza...'.
-          3. IMPORTANTE: Ve a "Manual Deploy" > "Clear build cache & deploy".`;
-      } else {
-          msg = `Falta la configuración de la API Key. Asegúrate de añadir VITE_GEMINI_API_KEY en las variables de entorno de Render y redesplegar.`;
-      }
-      
-      throw new Error(msg);
-  }
-  
+  const apiKey = getApiKey();
   return new GoogleGenAI({ apiKey });
 };
 
