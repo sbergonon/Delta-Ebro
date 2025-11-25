@@ -2,42 +2,55 @@ import { GoogleGenAI } from "@google/genai";
 import { UserPreferences, ItineraryResult, GroundingSource, Transport, ItineraryStep, Theme } from "../types";
 import { TRANSLATIONS } from "../constants";
 
-const getAiClient = () => {
+// Helper function to extract and sanitize the key, useful for debugging
+const getApiKeyInfo = () => {
   let apiKey: string | undefined;
-  
-  // 1. Try Vite standard (import.meta.env)
-  // This is required for client-side React apps built with Vite deployed to Render/Netlify/Vercel
+  let source = "Unknown";
+
+  // 1. Try Vite standard
   try {
     // @ts-ignore
-    if (typeof import.meta !== 'undefined' && import.meta.env) {
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) {
       // @ts-ignore
       apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      source = "VITE_GEMINI_API_KEY";
     }
-  } catch (e) {
-    // Ignore errors if import.meta is not available
-  }
+  } catch (e) {}
 
-  // 2. Fallback to process.env (Node.js or specific build replacements)
+  // 2. Fallback to process.env
   if (!apiKey) {
     try {
-      apiKey = process.env.API_KEY;
-    } catch (e) {
-      console.warn("Could not access process.env.API_KEY directly.");
-    }
+      if (process.env.API_KEY) {
+        apiKey = process.env.API_KEY;
+        source = "process.env.API_KEY";
+      }
+    } catch (e) {}
   }
 
-  // 3. SANITIZATION (Critical for Render/Deployment envs)
+  // 3. Sanitization
   if (apiKey) {
-      apiKey = apiKey.trim(); // Remove leading/trailing spaces from copy-paste
+      apiKey = apiKey.trim();
       
-      // Remove quotes if user accidentally added them in the env var value (e.g. "AIza...")
+      // Handle common paste error: "VITE_KEY=AIza..." inside the value field
+      if (apiKey.includes('=')) {
+          const parts = apiKey.split('=');
+          apiKey = parts[parts.length - 1].trim();
+      }
+
+      // Handle quotes
       if ((apiKey.startsWith('"') && apiKey.endsWith('"')) || (apiKey.startsWith("'") && apiKey.endsWith("'"))) {
           apiKey = apiKey.substring(1, apiKey.length - 1);
       }
   }
 
+  return { apiKey, source };
+};
+
+const getAiClient = () => {
+  const { apiKey } = getApiKeyInfo();
+  
   if (!apiKey) {
-    throw new Error("API Key not found. Please ensure 'VITE_GEMINI_API_KEY' (for Vite) or 'API_KEY' is set in your Render dashboard.");
+    throw new Error("API Key not found. Please ensure 'VITE_GEMINI_API_KEY' is set in your Render dashboard.");
   }
   return new GoogleGenAI({ apiKey });
 };
@@ -254,14 +267,30 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
   } catch (error: any) {
     console.error("Error generating itinerary:", error);
     
-    // Explicitly check for the "API Key not found" error thrown by getAiClient
-    if (error.message && (error.message.includes("API Key") || error.message.includes("VITE_GEMINI_API_KEY"))) {
-        throw error;
+    // Enhanced Debug info
+    const { apiKey, source } = getApiKeyInfo();
+    let maskedKey = "UNDEFINED";
+    let keyWarning = "";
+
+    if (apiKey) {
+        const len = apiKey.length;
+        if (len > 10) {
+            maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(len - 4)} (Length: ${len})`;
+        } else {
+            maskedKey = `INVALID_LENGTH (${len})`;
+        }
+        
+        if (len !== 39) {
+            keyWarning = "\n[WARNING: API Key length is not 39. Check if you pasted extra characters.]";
+        }
     }
-    
-    // For all other errors, include the technical details so the user can debug on Render
+
     const errorMessage = error.message || error.toString();
-    const errorBody = JSON.stringify(error, null, 2);
-    throw new Error(`${t.errors.api_missing} [Debug: ${errorMessage}. Details: ${errorBody}]`);
+    
+    throw new Error(
+        `${t.errors.api_missing}\n` + 
+        `[Debug Info: Source=${source}, Key=${maskedKey}]${keyWarning}\n` + 
+        `[Error Details: ${errorMessage}]`
+    );
   }
 };
