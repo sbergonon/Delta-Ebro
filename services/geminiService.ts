@@ -3,9 +3,31 @@ import { UserPreferences, ItineraryResult, GroundingSource, Transport, Itinerary
 import { TRANSLATIONS } from "../constants";
 
 const getAiClient = () => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  let apiKey: string | undefined;
+  
+  // 1. Try Vite standard (import.meta.env)
+  // This is required for client-side React apps built with Vite deployed to Render/Netlify/Vercel
+  try {
+    // @ts-ignore
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      // @ts-ignore
+      apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    }
+  } catch (e) {
+    // Ignore errors if import.meta is not available
+  }
+
+  // 2. Fallback to process.env (Node.js or specific build replacements)
   if (!apiKey) {
-    throw new Error("API Key not found. Please ensure the API_KEY environment variable is set in your project configuration.");
+    try {
+      apiKey = process.env.API_KEY;
+    } catch (e) {
+      console.warn("Could not access process.env.API_KEY directly.");
+    }
+  }
+
+  if (!apiKey) {
+    throw new Error("API Key not found. Please ensure 'VITE_GEMINI_API_KEY' (for Vite) or 'API_KEY' is set in your Render dashboard.");
   }
   return new GoogleGenAI({ apiKey });
 };
