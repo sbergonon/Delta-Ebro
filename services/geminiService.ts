@@ -26,6 +26,16 @@ const getAiClient = () => {
     }
   }
 
+  // 3. SANITIZATION (Critical for Render/Deployment envs)
+  if (apiKey) {
+      apiKey = apiKey.trim(); // Remove leading/trailing spaces from copy-paste
+      
+      // Remove quotes if user accidentally added them in the env var value (e.g. "AIza...")
+      if ((apiKey.startsWith('"') && apiKey.endsWith('"')) || (apiKey.startsWith("'") && apiKey.endsWith("'"))) {
+          apiKey = apiKey.substring(1, apiKey.length - 1);
+      }
+  }
+
   if (!apiKey) {
     throw new Error("API Key not found. Please ensure 'VITE_GEMINI_API_KEY' (for Vite) or 'API_KEY' is set in your Render dashboard.");
   }
@@ -127,8 +137,6 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
       `;
   }
 
-  // We keep the main prompt logic in Spanish/English for better model adherence, 
-  // but explicitly command the output language.
   const prompt = `
     Actúa como un guía turístico experto local de Amposta y Terres de l'Ebre (Tarragona, España).
     Crea un itinerario detallado basado en las siguientes preferencias:
@@ -253,6 +261,7 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
     
     // For all other errors, include the technical details so the user can debug on Render
     const errorMessage = error.message || error.toString();
-    throw new Error(`${t.errors.api_missing} [Debug: ${errorMessage}]`);
+    const errorBody = JSON.stringify(error, null, 2);
+    throw new Error(`${t.errors.api_missing} [Debug: ${errorMessage}. Details: ${errorBody}]`);
   }
 };
