@@ -2,66 +2,97 @@ import { GoogleGenAI } from "@google/genai";
 import { UserPreferences, ItineraryResult, GroundingSource, ItineraryStep, Theme, Transport } from "../types";
 import { TRANSLATIONS } from "../constants";
 
-// Helper function to extract and sanitize the key, useful for debugging
-const getApiKeyInfo = () => {
-  let apiKey: string | undefined;
-  let source = "Unknown";
-
-  // 1. Try Vite standard
-  try {
-    // @ts-ignore
-    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) {
-      // @ts-ignore
-      apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      source = "VITE_GEMINI_API_KEY";
-    }
-  } catch (e) {}
-
-  // 2. Fallback to process.env
-  if (!apiKey) {
-    try {
-      if (process.env.API_KEY) {
-        apiKey = process.env.API_KEY;
-        source = "process.env.API_KEY";
-      }
-    } catch (e) {}
-  }
-
-  // 3. Sanitization
-  if (apiKey) {
-      apiKey = apiKey.trim();
-      
-      // Handle common paste error: "VITE_KEY=AIza..." inside the value field
-      if (apiKey.includes('=')) {
-          const parts = apiKey.split('=');
-          apiKey = parts[parts.length - 1].trim();
-      }
-
-      // Handle quotes
-      if ((apiKey.startsWith('"') && apiKey.endsWith('"')) || (apiKey.startsWith("'") && apiKey.endsWith("'"))) {
-          apiKey = apiKey.substring(1, apiKey.length - 1);
-      }
-  }
-
-  return { apiKey, source };
+// Helper to determine if a key looks valid
+const isValidKey = (key: string | undefined): boolean => {
+    if (!key) return false;
+    // Basic Google API Key validation: Must start with AIza and be approx 39 chars
+    return key.startsWith("AIza") && key.length > 35;
 };
 
-const validateKey = (apiKey: string | undefined) => {
-    if (!apiKey) return "Clave no encontrada.";
-    if (apiKey.length < 30) return "La clave es demasiado corta. Parece un texto de relleno.";
-    if (apiKey.includes("PLACEHOLDER") || apiKey.includes("YOUR_KEY")) return "Estás usando una clave de ejemplo (PLACEHOLDER).";
-    if (!apiKey.startsWith("AIza")) return "La clave no empieza por 'AIza'. Revisa el formato.";
-    return null; // Valid
+const getApiKeyInfo = () => {
+  // We will search multiple locations for a valid key.
+  // Priority: 
+  // 1. Valid VITE_GEMINI_API_KEY
+  // 2. Valid API_KEY
+  // 3. Valid process.env.API_KEY
+  
+  const candidates: { val: string | undefined, src: string }[] = [];
+
+  // Source 1: Vite standard env
+  try {
+      // @ts-ignore
+      if (typeof import.meta !== 'undefined' && import.meta.env) {
+          // @ts-ignore
+          candidates.push({ val: import.meta.env.VITE_GEMINI_API_KEY, src: "VITE_GEMINI_API_KEY" });
+          // @ts-ignore
+          candidates.push({ val: import.meta.env.GEMINI_API_KEY, src: "GEMINI_API_KEY" });
+          // @ts-ignore
+          candidates.push({ val: import.meta.env.API_KEY, src: "API_KEY" });
+      }
+  } catch (e) {}
+
+  // Source 2: Process env (Node/Webpack/Some Vite configs)
+  try {
+      if (typeof process !== 'undefined' && process.env) {
+          candidates.push({ val: process.env.API_KEY, src: "process.env.API_KEY" });
+          candidates.push({ val: process.env.VITE_GEMINI_API_KEY, src: "process.env.VITE_GEMINI_API_KEY" });
+      }
+  } catch (e) {}
+
+  // Search for the first VALID candidate
+  for (const c of candidates) {
+      if (!c.val) continue;
+      
+      let key = c.val.trim();
+      
+      // Clean up common paste errors like 'KEY=AIza...'
+      if (key.includes('=')) {
+          const parts = key.split('=');
+          key = parts[parts.length - 1].trim();
+      }
+      // Clean quotes
+      if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+          key = key.substring(1, key.length - 1);
+      }
+
+      // Check validation
+      if (isValidKey(key)) {
+          return { apiKey: key, source: c.src, status: 'valid' };
+      }
+  }
+
+  // If we are here, we didn't find a valid key. 
+  // Return the first non-empty placeholder we found for debugging purposes.
+  const placeholder = candidates.find(c => c.val && c.val.length > 0);
+  if (placeholder) {
+      return { apiKey: placeholder.val, source: placeholder.src, status: 'invalid_placeholder' };
+  }
+
+  return { apiKey: undefined, source: "None", status: 'missing' };
 };
 
 const getAiClient = () => {
-  const { apiKey } = getApiKeyInfo();
-  const validationError = validateKey(apiKey);
+  const { apiKey, source, status } = getApiKeyInfo();
   
-  if (validationError) {
-      // Throw a clean error that doesn't expose the full logic but guides the user
-      throw new Error(`Configuración incorrecta: ${validationError}. Asegúrate de actualizar la variable en Render y hacer un 'Clear build cache & deploy'.`);
+  if (status !== 'valid' || !apiKey) {
+      let msg = "No se ha encontrado una API Key válida.";
+      
+      if (status === 'invalid_placeholder') {
+          msg = `[ERROR CRÍTICO] La aplicación está leyendo una clave incorrecta (${source}).
+          
+          Valor detectado: ${apiKey?.substring(0, 10)}... (Parece un texto de relleno/placeholder).
+          
+          SOLUCIÓN PARA RENDER:
+          1. Ve a "Environment" en tu Dashboard de Render.
+          2. Asegúrate de tener 'VITE_GEMINI_API_KEY' con el valor 'AIza...'.
+          3. IMPORTANTE: Ve a "Manual Deploy" > "Clear build cache & deploy".`;
+      } else {
+          msg = `Falta la configuración de la API Key. Asegúrate de añadir VITE_GEMINI_API_KEY en las variables de entorno de Render y redesplegar.`;
+      }
+      
+      throw new Error(msg);
   }
+  
   return new GoogleGenAI({ apiKey });
 };
 
@@ -277,33 +308,7 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
   } catch (error: any) {
     console.error("Error generating itinerary:", error);
     
-    // Enhanced Debug info
-    const { apiKey, source } = getApiKeyInfo();
-    let maskedKey = "UNDEFINED";
-    let keyWarning = "";
-
-    if (apiKey) {
-        const len = apiKey.length;
-        if (len > 10) {
-            maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(len - 4)} (Length: ${len})`;
-        } else {
-            maskedKey = `INVALID_LENGTH (${len})`;
-        }
-        
-        // Check for placeholder/garbage
-        if (apiKey.includes("PLACEHOLDER") || apiKey.includes("KEY")) {
-             keyWarning = "\n[CRITICAL ERROR]: Your app is using a Placeholder Key, not the real one. You must update Render Environment Variables and REDEPLOY.";
-        } else if (len !== 39) {
-            keyWarning = "\n[WARNING]: API Key length is not 39.";
-        }
-    }
-
-    const errorMessage = error.message || error.toString();
-    
-    throw new Error(
-        `${t.errors.api_missing}\n` + 
-        `[Debug Info: Source=${source}, Key=${maskedKey}]${keyWarning}\n` + 
-        `[Error Details: ${errorMessage}]`
-    );
+    // Pass through the clean error message from getAiClient if possible
+    throw error;
   }
 };
