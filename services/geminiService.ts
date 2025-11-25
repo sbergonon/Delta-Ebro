@@ -245,10 +245,14 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
 
   } catch (error: any) {
     console.error("Error generating itinerary:", error);
-    // If the error is specifically about the missing API key, expose that message directly
-    if (error.message && error.message.includes("API Key")) {
+    
+    // Explicitly check for the "API Key not found" error thrown by getAiClient
+    if (error.message && (error.message.includes("API Key") || error.message.includes("VITE_GEMINI_API_KEY"))) {
         throw error;
     }
-    throw new Error(t.errors.api_missing);
+    
+    // For all other errors, include the technical details so the user can debug on Render
+    const errorMessage = error.message || error.toString();
+    throw new Error(`${t.errors.api_missing} [Debug: ${errorMessage}]`);
   }
 };
