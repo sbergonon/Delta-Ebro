@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { UserPreferences, ItineraryResult, GroundingSource, Transport, ItineraryStep, Theme } from "../types";
+import { UserPreferences, ItineraryResult, GroundingSource, ItineraryStep, Theme, Transport } from "../types";
 import { TRANSLATIONS } from "../constants";
 
 // Helper function to extract and sanitize the key, useful for debugging
@@ -46,11 +46,21 @@ const getApiKeyInfo = () => {
   return { apiKey, source };
 };
 
+const validateKey = (apiKey: string | undefined) => {
+    if (!apiKey) return "Clave no encontrada.";
+    if (apiKey.length < 30) return "La clave es demasiado corta. Parece un texto de relleno.";
+    if (apiKey.includes("PLACEHOLDER") || apiKey.includes("YOUR_KEY")) return "Estás usando una clave de ejemplo (PLACEHOLDER).";
+    if (!apiKey.startsWith("AIza")) return "La clave no empieza por 'AIza'. Revisa el formato.";
+    return null; // Valid
+};
+
 const getAiClient = () => {
   const { apiKey } = getApiKeyInfo();
+  const validationError = validateKey(apiKey);
   
-  if (!apiKey) {
-    throw new Error("API Key not found. Please ensure 'VITE_GEMINI_API_KEY' is set in your Render dashboard.");
+  if (validationError) {
+      // Throw a clean error that doesn't expose the full logic but guides the user
+      throw new Error(`Configuración incorrecta: ${validationError}. Asegúrate de actualizar la variable en Render y hacer un 'Clear build cache & deploy'.`);
   }
   return new GoogleGenAI({ apiKey });
 };
@@ -280,8 +290,11 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
             maskedKey = `INVALID_LENGTH (${len})`;
         }
         
-        if (len !== 39) {
-            keyWarning = "\n[WARNING: API Key length is not 39. Check if you pasted extra characters.]";
+        // Check for placeholder/garbage
+        if (apiKey.includes("PLACEHOLDER") || apiKey.includes("KEY")) {
+             keyWarning = "\n[CRITICAL ERROR]: Your app is using a Placeholder Key, not the real one. You must update Render Environment Variables and REDEPLOY.";
+        } else if (len !== 39) {
+            keyWarning = "\n[WARNING]: API Key length is not 39.";
         }
     }
 
