@@ -10,39 +10,67 @@ const isValidKey = (key: string | undefined): boolean => {
 };
 
 const getApiKey = (): string => {
-  // Vite injects the variable at build time.
-  // We accept VITE_GEMINI_API_KEY as the standard.
+  let key: string | undefined = undefined;
+
+  // 1. Try Standard Vite (The correct way)
   // @ts-ignore
-  let key = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+      // @ts-ignore
+      key = import.meta.env.VITE_GEMINI_API_KEY;
+  }
+
+  // 2. Fallback: Try checking for just "API_KEY" or "GEMINI_API_KEY" in Vite
+  // (Usually Vite blocks this, but custom configs might allow it)
+  // @ts-ignore
+  if (!key && typeof import.meta !== 'undefined' && import.meta.env) {
+      // @ts-ignore
+      key = import.meta.env.API_KEY || import.meta.env.GEMINI_API_KEY;
+  }
+
+  // 3. Fallback: Try process.env (Node/Webpack compatibility mode)
+  // Sometimes Render builds expose variables here depending on the build command
+  if (!key && typeof process !== 'undefined' && process.env) {
+      key = process.env.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
+  }
   
   // Cleaning: Remove whitespace and accidental quotes
   key = key ? key.trim().replace(/^['"]|['"]$/g, '') : "";
 
   // 1. Check if missing
   if (!key) {
-      throw new Error("Falta la API Key. Asegúrate de que 'VITE_GEMINI_API_KEY' está definida en las variables de entorno de Render.");
+      // Detailed error for debugging
+      console.error("DEBUG INFO: VITE_GEMINI_API_KEY is undefined.");
+      // @ts-ignore
+      if (typeof import.meta !== 'undefined' && import.meta.env) {
+          // @ts-ignore
+          console.error("Available Env Vars:", JSON.stringify(import.meta.env, null, 2));
+      }
+
+      throw new Error(`
+        [ERROR: API KEY NO ENCONTRADA]
+        
+        El sistema no ve la clave. Esto suele pasar por una regla de seguridad de VITE.
+        
+        SOLUCIÓN EN RENDER:
+        1. Ve a "Environment".
+        2. Asegúrate de que la variable se llame EXACTAMENTE: 'VITE_GEMINI_API_KEY'.
+           (Si la llamas solo 'API_KEY', Vite la oculta por seguridad y la app no la recibe).
+        3. Dale a "Clear build cache & deploy".
+      `);
   }
 
   // 2. Check if it's a placeholder (The Common Error)
-  // If this triggers, it means a .env file in GitHub is overriding the Render config.
   if (key.includes("PLACEHOLDER") || key.includes("tu_clave_aqui") || key.startsWith("YOUR_")) {
       throw new Error(`
         [ERROR CRÍTICO: ARCHIVO .ENV DETECTADO]
-        
-        La app está leyendo una clave falsa: "${key.substring(0, 10)}..."
-        
-        CAUSA:
-        Tienes un archivo llamado '.env' o '.env.local' en tu GitHub que está sobrescribiendo la configuración de Render.
-        
-        SOLUCIÓN:
-        1. Ve a GitHub y BORRA el archivo '.env' o '.env.local'.
-        2. En Render, haz 'Manual Deploy' > 'Clear build cache & deploy'.
+        La app está leyendo una clave falsa de un archivo local.
+        Asegúrate de haber borrado '.env' o '.env.local' de GitHub.
       `);
   }
 
   // 3. Validate format
   if (!isValidKey(key)) {
-       throw new Error(`La API Key no parece válida (Longitud: ${key.length}). Asegúrate de que empieza por 'AIza'. Valor actual: ${key.substring(0,5)}...`);
+       throw new Error(`La API Key detectada no es válida (Longitud: ${key.length}). Debe empezar por 'AIza'. Revisa que no haya espacios al principio o al final en Render.`);
   }
 
   return key;
