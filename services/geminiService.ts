@@ -2,59 +2,8 @@ import { GoogleGenAI } from "@google/genai";
 import { UserPreferences, ItineraryResult, GroundingSource, ItineraryStep, Theme, Transport } from "../types";
 import { TRANSLATIONS } from "../constants";
 
-// --- CONFIGURACIÓN CLAVE API ---
-
-const getApiKey = (): string => {
-  let key: string | undefined = undefined;
-
-  try {
-    // Intento de lectura segura usando optional chaining.
-    // Esto previene el crash si import.meta.env es undefined.
-    // @ts-ignore
-    key = import.meta.env?.VITE_GEMINI_API_KEY;
-  } catch (e) {
-    console.warn("Error leyendo variable de entorno:", e);
-  }
-
-  // 1. Verificación básica
-  if (key && typeof key === 'string' && key.startsWith("AIza")) {
-    return key;
-  }
-
-  // 2. Si fallamos, preparamos información de debug segura
-  let envDebug = "No se pudo leer el entorno (import.meta.env undefined)";
-  try {
-    // @ts-ignore
-    if (import.meta && import.meta.env) {
-       // @ts-ignore
-       envDebug = JSON.stringify(import.meta.env, null, 2);
-    }
-  } catch (e) {
-    envDebug = "Error serializando entorno: " + e;
-  }
-  
-  throw new Error(`
-    [ERROR CRÍTICO v4.0 - API KEY]
-    
-    No se ha detectado la clave API o el formato es incorrecto.
-    La aplicación ha evitado un crash por "undefined".
-    
-    Valor leído: ${key ? `"${key.substring(0,5)}..."` : "UNDEFINED / NULL"}
-    
-    --- ESTADO DEL ENTORNO ---
-    ${envDebug}
-    
-    --- SOLUCIÓN RENDER ---
-    1. Environment Variables > Add Variable
-    2. Key: VITE_GEMINI_API_KEY
-    3. Value: AIzaSy...
-    4. Guardar y pulsar "Clear build cache & deploy".
-  `);
-};
-
 const getAiClient = () => {
-  const apiKey = getApiKey();
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 export const generateStepImage = async (title: string, description: string): Promise<string | null> => {

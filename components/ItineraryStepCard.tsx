@@ -16,6 +16,7 @@ interface ItineraryStepCardProps {
   onGenerateImage?: (stepId: string) => Promise<void>;
   onViewBooking: () => void;
   isSpecialEvent?: boolean;
+  hasDirectBooking?: boolean;
 }
 
 const THEME_GRADIENTS: Record<Theme, string> = {
@@ -40,6 +41,22 @@ const getEffectiveTheme = (step: ItineraryStep, globalTheme: Theme): Theme => {
   return globalTheme;
 };
 
+// Helper to clean title for Maps search queries
+const cleanTitleForSearch = (title: string) => {
+    // Common tourism verbs in EN, ES, CA to strip for cleaner map searches
+    const verbs = [
+        "Visit", "Tour", "Discover", "Explore", "Walk to", "Check-in at", "See", "View",
+        "Visita", "Visitar", "Ver", "Descubrir", "Explorar", "Caminar a", "Paseo por", "Ir a", "Ruta por", "Excursión a",
+        "Veure", "Descobrir", "Passeig per", "Anar a", "Ruta per", "Excursió a"
+    ];
+    const verbRegex = new RegExp(`^(${verbs.join('|')}) `, 'i');
+    
+    return title
+        .replace(verbRegex, '') 
+        .replace(/[:()].*$/, '') // Remove subtitles in parens/after colon
+        .trim();
+};
+
 const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({ 
   step, 
   index, 
@@ -52,7 +69,8 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
   onUpdateNotes,
   onGenerateImage,
   onViewBooking,
-  isSpecialEvent
+  isSpecialEvent,
+  hasDirectBooking
 }) => {
   const [imgError, setImgError] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
@@ -94,9 +112,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
   const placeholderGradient = THEME_GRADIENTS[effectiveTheme] || THEME_GRADIENTS[Theme.CUSTOM];
   const placeholderIcon = THEME_ICONS[effectiveTheme] || '🗺️';
   
-  // Refined Heuristic for "Bookable" steps
-  // We want to target Attractions, Museums, Restaurants, Accommodations
-  // and exclude generic walking, checking in, or viewing.
+  // Heuristic for "Bookable" steps
   const isBookable = (() => {
     const title = step.title.toLowerCase();
     const desc = step.description.toLowerCase();
@@ -104,20 +120,22 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
     // Explicit exclusions
     if (title.includes('check-in') || title.includes('check-out') || title.includes('esmorzar') || title.includes('desayuno') || title.includes('breakfast')) return false;
 
-    // Strong positive signals
+    // Strong positive signals for attractions and accommodations
     const keywords = [
-        'museu', 'museum', 'castell', 'castle', 'castillo', 'centre', 'centro', 'center',
+        'museu', 'museum', 'castell', 'castle', 'castillo', 'centre', 'centro', 'center', 'exposic',
         'restaurant', 'sopar', 'cena', 'dinner', 'dinar', 'almuerzo', 'lunch',
-        'hotel', 'hostal', 'apartament', 'casa rural',
-        'creuer', 'crucero', 'cruise', 'barca', 'kayak',
-        'tour', 'guiad', 'guided',
-        'entrada', 'ticket', 'preu', 'price', '€'
+        'hotel', 'hostal', 'apartament', 'casa rural', 'allotjament', 'alojamiento', 'camping',
+        'creuer', 'crucero', 'cruise', 'barca', 'kayak', 'lloguer', 'alquiler', 'rent',
+        'tour', 'guiad', 'guided', 'visita',
+        'entrada', 'ticket', 'preu', 'price', '€',
+        'parc', 'parque', 'park', 'jardí', 'jardin', 'garden',
+        'activitat', 'actividad', 'activity', 'món natura', 'mon natura'
     ];
 
     if (keywords.some(k => title.includes(k) || desc.includes(k))) return true;
 
     // Fallback: exclude generic "Walk/View" steps, include others if length sufficient
-    const genericKeywords = ['passeig', 'paseo', 'walk', 'caminar', 'vista', 'view', 'mirador', 'arribada', 'llegada', 'sortida', 'salida'];
+    const genericKeywords = ['passeig', 'paseo', 'walk', 'caminar', 'vista', 'view', 'mirador', 'arribada', 'llegada', 'sortida', 'salida', 'descans'];
     if (genericKeywords.some(k => title.includes(k))) return false;
 
     return step.title.length > 3;
@@ -146,9 +164,15 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
       setIsGenerating(false);
   };
 
+  const containerClasses = isSpecialEvent 
+    ? "bg-white rounded-xl border-2 border-fuchsia-400 ring-4 ring-fuchsia-50 shadow-lg shadow-fuchsia-100/50 hover:shadow-xl transition-all duration-200 overflow-hidden flex flex-col md:flex-row group h-full md:min-h-[320px] relative z-10"
+    : "bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col md:flex-row group h-full md:min-h-[320px]";
+
+  const showBookingBtn = isBookable || hasDirectBooking;
+
   return (
     <>
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col md:flex-row group h-full md:min-h-[320px]">
+      <div className={containerClasses}>
         
         {/* Time/Day Indicator */}
         <div className="bg-slate-50 border-b md:border-b-0 md:border-r border-slate-200 p-4 md:w-32 flex flex-row md:flex-col items-center md:justify-center justify-between gap-2 text-center shrink-0">
@@ -162,7 +186,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
           </span>
         </div>
 
-        {/* Image Section - Enhanced Fallback & Size */}
+        {/* Image Section */}
         <div className={`relative h-64 md:h-auto md:w-2/5 lg:w-1/3 shrink-0 overflow-hidden border-b md:border-b-0 md:border-r border-slate-200 ${!hasImage ? placeholderGradient : 'bg-slate-100'}`}>
             {hasImage ? (
                 <div className="w-full h-full relative group-hover:scale-[1.02] transition-transform duration-700 ease-out">
@@ -172,7 +196,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                       className="w-full h-full object-cover"
                       onError={() => {
                         setImgError(true);
-                        // Auto retry with AI generation if original link fails and it wasn't already a generated one
+                        // Auto retry with AI generation if original link fails
                         if (onGenerateImage && step.imageUrl && !step.imageUrl.startsWith('data:')) {
                             onGenerateImage(step.id);
                         }
@@ -186,7 +210,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                   onClick={!isGenerating && onGenerateImage ? handleGenerateClick : undefined}
                   className={`w-full h-full flex flex-col items-center justify-center relative overflow-hidden p-8 group/placeholder transition-colors ${onGenerateImage ? 'cursor-pointer hover:bg-slate-50' : ''}`}
                 >
-                   {/* Decorative background shapes for generated look */}
+                   {/* Decorative background shapes */}
                    <div className="absolute top-[-10%] right-[-10%] w-32 h-32 bg-white/40 rounded-full blur-2xl"></div>
                    <div className="absolute bottom-[-10%] left-[-10%] w-32 h-32 bg-black/5 rounded-full blur-2xl"></div>
                    
@@ -288,10 +312,11 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
 
               {(transport === Transport.BUS || transport === Transport.RIVER) && (
                 <a 
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${step.title} Amposta ${transport === Transport.BUS ? 'bus stop' : 'river pier'}`)}`}
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${cleanTitleForSearch(step.title)} Amposta ${transport === Transport.BUS ? 'bus stop' : 'river pier'}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group/btn flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-indigo-600 transition-colors bg-slate-50 hover:bg-indigo-50 px-3 py-2 rounded-lg border border-transparent hover:border-indigo-100"
+                  title={`Find the nearest ${transport === Transport.BUS ? 'bus stop' : 'river pier'} for ${step.title}`}
                 >
                   <svg className="w-4 h-4 text-slate-400 group-hover/btn:text-indigo-500 transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle>
@@ -300,14 +325,22 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                 </a>
               )}
               
-              {isBookable && (
+              {showBookingBtn && (
                 <button 
                   onClick={onViewBooking}
-                  className="group/btn flex items-center gap-2 text-xs font-medium transition-colors bg-teal-50 hover:bg-teal-100 px-3 py-2 rounded-lg border border-teal-100 hover:border-teal-200 text-teal-700"
+                  className={`group/btn flex items-center gap-2 text-xs font-medium transition-colors px-3 py-2 rounded-lg border ${
+                     hasDirectBooking 
+                     ? "bg-amber-100 hover:bg-amber-200 border-amber-200 text-amber-900 shadow-sm" 
+                     : "bg-teal-50 hover:bg-teal-100 border-teal-100 hover:border-teal-200 text-teal-700"
+                  }`}
                 >
-                  <svg className="w-4 h-4 text-teal-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
-                  </svg>
+                  {hasDirectBooking ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                  ) : (
+                      <svg className="w-4 h-4 text-teal-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+                      </svg>
+                  )}
                   {t.results.view_booking_btn}
                 </button>
               )}

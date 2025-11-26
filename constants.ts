@@ -64,6 +64,9 @@ interface Translation {
     suggested_route: string;
     river_note_upriver: string;
     river_note_local: string;
+    view_full_river_route: string;
+    pier_locations: string;
+    river_route_title: string;
     plan_title: string;
     day: string;
     no_activities: string;
@@ -90,11 +93,22 @@ interface Translation {
     generating_image: string;
     check_bus_stop: string;
     check_river_pier: string;
+    special_event: string;
   };
   errors: {
     generic: string;
     api_missing: string;
-  }
+  };
+  delta_info: {
+    title: string;
+    subtitle: string;
+    content: string;
+  };
+  travel_tips: {
+    title: string;
+    subtitle: string;
+    content: string;
+  };
 }
 
 export const TRANSLATIONS: Record<Language, Translation> = {
@@ -145,6 +159,9 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       suggested_route: "Ruta suggerida",
       river_note_upriver: "Mostrant ruta aproximada del riu entre Amposta i localitats històriques (Tortosa/Miravet). Consulta horaris.",
       river_note_local: "Mostrant accessibilitat des de l'embarcador detectat cap als punts d'interès.",
+      view_full_river_route: "Veure ruta fluvial completa",
+      pier_locations: "Embarcadors clau",
+      river_route_title: "Ruta Fluvial Ebre",
       plan_title: "Pla de Viatge",
       day: "Dia",
       no_activities: "No hi ha activitats programades per a aquest dia.",
@@ -178,11 +195,42 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       generate_image_btn: "Generar Imatge AI",
       generating_image: "Generant...",
       check_bus_stop: "Veure parada bus",
-      check_river_pier: "Veure embarcador"
+      check_river_pier: "Veure embarcador",
+      special_event: "Esdeveniment Especial"
     },
     errors: {
       generic: "S'ha produït un error inesperat.",
       api_missing: "No s'ha pogut connectar amb l'assistent."
+    },
+    delta_info: {
+        title: "Descobreix el Delta de l'Ebre",
+        subtitle: "Natura, tradició i paisatges únics",
+        content: `
+El **Delta de l'Ebre** és l'hàbitat aquàtic més important de la Mediterrània occidental, després de la Camarga (França) i el segon d'Espanya, després del Parc Nacional de Doñana.
+
+### 🌿 Ecosistemes Únics
+El Delta ofereix una varietat de paisatges que canvien amb les estacions:
+*   **Llacunes:** Com **l'Encanyissada** o la **Tancada**, vitals per a la pesca i la vida salvatge.
+*   **Platges:** Extenses i verges com la del **Trabucador** o la **Marquesa**.
+*   **Els Ullals:** Petites basses d'aigua dolça subterrània (com els de Baltasar).
+
+### 🔭 Activitats Destacades
+*   **Observació d'aus (Birdwatching):** Més de 300 espècies d'aus, incloent la colònia de **flamencs** més emblemàtica.
+*   **Creuers Fluvials:** Navega per la desembocadura fins a l'Illa de Buda per gaudir d'una perspectiva única del riu i el mar.
+*   **Cicloturisme:** El terreny totalment pla fa que recórrer el Delta en bicicleta sigui una activitat perfecta per a totes les edats.
+*   **Gastronomia:** No marxis sense tastar un bon **arròs del Delta**, l'anguila fumada o els musclos del terreny.
+`
+    },
+    travel_tips: {
+        title: "Consells de Viatge",
+        subtitle: "Informació pràctica per a la teva visita",
+        content: `
+*   **🦟 Mosquits:** Imprescindible portar repel·lent fort, especialment si visites el Delta a l'estiu o durant la sortida/posta de sol.
+*   **📅 Millor època:** Primavera (abril-maig) i tardor (setembre-octubre) són ideals per a l'observació d'aus. L'estiu és perfecte per gaudir de les platges.
+*   **🍽️ Horaris:** Els dinars solen ser entre les 13:30 i 15:30, i els sopars entre les 21:00 i 23:00. Moltes cuines tanquen fora d'aquests horaris.
+*   **🗣️ Idioma:** Es parla tant català com castellà. Un senzill "Bon dia" o "Gràcies" sempre és ben rebut pels locals.
+*   **☀️ Protecció:** El sol és molt fort als espais oberts del Delta on no hi ha ombres naturals. Porta sempre gorra, ulleres de sol i protecció solar.
+`
     }
   },
   es: {
@@ -232,6 +280,9 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       suggested_route: "Ruta sugerida",
       river_note_upriver: "Mostrando ruta aproximada del río entre Amposta y localidades históricas (Tortosa/Miravet). Consulta horarios.",
       river_note_local: "Mostrando accesibilidad desde el embarcadero detectado hacia los puntos de interés.",
+      view_full_river_route: "Ver ruta fluvial completa",
+      pier_locations: "Embarcaderos clave",
+      river_route_title: "Ruta Fluvial Ebro",
       plan_title: "Plan de Viaje",
       day: "Día",
       no_activities: "No hay actividades programadas para este día.",
@@ -265,11 +316,42 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       generate_image_btn: "Generar Imagen AI",
       generating_image: "Generando...",
       check_bus_stop: "Ver parada bus",
-      check_river_pier: "Ver embarcadero"
+      check_river_pier: "Ver embarcadero",
+      special_event: "Evento Especial"
     },
     errors: {
       generic: "Ocurrió un error inesperado.",
       api_missing: "No se pudo conectar con el asistente."
+    },
+    delta_info: {
+        title: "Descubre el Delta del Ebro",
+        subtitle: "Naturaleza, tradición y paisajes únicos",
+        content: `
+El **Delta del Ebro** es el hábitat acuático más importante del Mediterráneo occidental, después de la Camarga (Francia) y el segundo de España, tras el Parque Nacional de Doñana.
+
+### 🌿 Ecosistemas Únicos
+El Delta ofrece una variedad de paisajes que cambian con las estaciones:
+*   **Lagunas:** Como **l'Encanyissada** o la **Tancada**, vitales para la pesca y la vida salvaje.
+*   **Playas:** Extensas y vírgenes como la del **Trabucador** o la **Marquesa**.
+*   **Els Ullals:** Pequeñas balsas de agua dulce subterránea (como los de Baltasar).
+
+### 🔭 Actividades Destacadas
+*   **Avistamiento de aves (Birdwatching):** Más de 300 especies de aves, incluyendo la colonia de **flamencos** más emblemática.
+*   **Cruceros Fluviales:** Navega por la desembocadura hasta la Isla de Buda para disfrutar de una perspectiva única del río y el mar.
+*   **Cicloturismo:** El terreno totalmente llano hace que recorrer el Delta en bicicleta sea una actividad perfecta para todas las edades.
+*   **Gastronomía:** No te vayas sin probar un buen **arroz del Delta**, la anguila ahumada o los mejillones del terreno.
+`
+    },
+    travel_tips: {
+        title: "Consejos de Viaje",
+        subtitle: "Información práctica para tu visita",
+        content: `
+*   **🦟 Mosquitos:** Es imprescindible llevar repelente fuerte, especialmente si visitas el Delta en verano o durante el amanecer/atardecer.
+*   **📅 Mejor época:** Primavera (abril-mayo) y otoño (septiembre-octubre) son ideales para observar aves. El verano es perfecto para disfrutar de las playas.
+*   **🍽️ Horarios:** Las comidas suelen ser entre las 13:30 y 15:30, y las cenas entre las 21:00 y 23:00. Muchas cocinas cierran fuera de estos horarios.
+*   **🗣️ Idioma:** Se habla tanto catalán como castellano. Un sencillo "Bon dia" o "Gracias" siempre es bien recibido por los locales.
+*   **☀️ Protección:** El sol es muy fuerte en los espacios abiertos del Delta donde no hay sombras naturales. Lleva siempre gorra, gafas de sol y protección solar.
+`
     }
   },
   en: {
@@ -319,6 +401,9 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       suggested_route: "Suggested route",
       river_note_upriver: "Showing approximate river route between Amposta and historical towns (Tortosa/Miravet). Check schedules.",
       river_note_local: "Showing accessibility from the detected pier to points of interest.",
+      view_full_river_route: "View full river route",
+      pier_locations: "Key pier locations",
+      river_route_title: "Ebro River Route",
       plan_title: "Travel Plan",
       day: "Day",
       no_activities: "No activities scheduled for this day.",
@@ -352,11 +437,42 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       generate_image_btn: "Generate AI Image",
       generating_image: "Generating...",
       check_bus_stop: "Check bus stop",
-      check_river_pier: "Check river pier"
+      check_river_pier: "Check river pier",
+      special_event: "Special Event"
     },
     errors: {
       generic: "An unexpected error occurred.",
       api_missing: "Could not connect to the travel assistant."
+    },
+    delta_info: {
+        title: "Discover the Ebro Delta",
+        subtitle: "Nature, tradition, and unique landscapes",
+        content: `
+The **Ebro Delta** is the most important aquatic habitat in the Western Mediterranean, after the Camargue (France), and the second in Spain, after Doñana National Park.
+
+### 🌿 Unique Ecosystems
+The Delta offers a variety of landscapes that change with the seasons:
+*   **Lagoons:** Such as **l'Encanyissada** or **la Tancada**, vital for fishing and wildlife.
+*   **Beaches:** Extensive and virgin beaches like **Trabucador** or **Marquesa**.
+*   **Els Ullals:** Small freshwater pools from underground springs (like Baltasar's).
+
+### 🔭 Highlighted Activities
+*   **Birdwatching:** More than 300 bird species, including the iconic **flamingo** colony.
+*   **River Cruises:** Sail through the river mouth to Buda Island to enjoy a unique perspective of the river and the sea.
+*   **Cycling:** The completely flat terrain makes cycling through the Delta a perfect activity for all ages.
+*   **Gastronomy:** Don't leave without tasting a good **Delta rice**, smoked eel, or local mussels.
+`
+    },
+    travel_tips: {
+        title: "Travel Tips",
+        subtitle: "Practical information for your visit",
+        content: `
+*   **🦟 Mosquitoes:** Strong repellent is essential, especially if visiting the Delta in summer or at sunrise/sunset.
+*   **📅 Best Time:** Spring (April-May) and Autumn (September-October) are ideal for birdwatching. Summer is perfect for enjoying the beaches.
+*   **🍽️ Timings:** Lunch is usually between 1:30 PM and 3:30 PM, and dinner between 9:00 PM and 11:00 PM. Many kitchens close outside these hours.
+*   **🗣️ Language:** Both Catalan and Spanish are spoken. A simple "Bon dia" (Good morning) or "Gracias" is always welcomed by locals.
+*   **☀️ Protection:** The sun is very strong in the open Delta where there are no natural shades. Always bring a hat, sunglasses, and sunscreen.
+`
     }
   }
 };

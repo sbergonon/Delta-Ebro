@@ -17,6 +17,8 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
   const [activeDay, setActiveDay] = useState<string>("");
   const [showCopiedToast, setShowCopiedToast] = useState(false);
   const [isBookingsOpen, setIsBookingsOpen] = useState(false);
+  const [isDeltaInfoOpen, setIsDeltaInfoOpen] = useState(false);
+  const [isTravelTipsOpen, setIsTravelTipsOpen] = useState(false);
   const [selectedBookingStep, setSelectedBookingStep] = useState<ItineraryStep | null>(null);
   
   // Track which steps have been auto-generated to prevent loops
@@ -123,7 +125,10 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
         "jornada gas", "jornadas gas", // Jornades gastronòmiques
         "diada", "concurs", "marató", "cursa",
         "mercado", "feria", "fiesta", // Spanish
-        "nit de", "noche de"
+        "nit de", "noche de",
+        "cavalcada", "cabalgata", "processó", "procesión", "desfilada", "desfile", // Parades
+        "concert", "concierto", "espectacle", "espectáculo",
+        "aplec", "trobada", "vetllada"
      ];
      // Check title primarily, or strong signal in description
      return eventKeywords.some(k => title.includes(k));
@@ -355,6 +360,38 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
            lower.includes('book');
   };
 
+  const getDirectBookingSource = (step: ItineraryStep) => {
+    return webSources.find(s => 
+        (s.title.toLowerCase().includes(step.title.toLowerCase()) || 
+         step.title.toLowerCase().includes(s.title.toLowerCase())) &&
+        isBookingSource(s.url)
+    );
+  };
+  
+  // Heuristic parser to extract details from description text
+  const extractDetails = (text: string) => {
+    let price: string | null = null;
+    let hours: string | null = null;
+
+    // Look for lines or phrases
+    const lines = text.split(/\n|\. /);
+    
+    for (const line of lines) {
+        // Price heuristics - enhanced for better detection of actual prices
+        if (!price && /(preu|precio|price|cost|entrada|ticket).{0,20}(\d|€|\$|\d+.{0,5}(eur|euros))/i.test(line) && line.length < 100) {
+            price = line.replace(/(\*\*|__)/g, '').trim();
+            // Remove ending dot if present
+            if (price.endsWith('.')) price = price.slice(0, -1);
+        }
+        // Hours heuristics - enhanced for time formats
+        if (!hours && /(horari|horario|hours|obertura|apertura|open|dilluns|dimarts|lunes|martes|monday).{0,20}\d/i.test(line) && line.length < 120) {
+            hours = line.replace(/(\*\*|__)/g, '').trim();
+            if (hours.endsWith('.')) hours = hours.slice(0, -1);
+        }
+    }
+    return { price, hours };
+  };
+
   return (
     <div className="animate-fade-in space-y-8 relative">
       
@@ -455,46 +492,54 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
 
                   {/* PRINT VIEW: Show all steps when printing, otherwise show visibleSteps */}
                   <div className="space-y-4 animate-fade-in hidden print:block">
-                     {steps.map((step, index) => (
-                        <ItineraryStepCard 
-                            key={`print-${step.id}`} 
-                            step={step} 
-                            index={index} 
-                            totalSteps={steps.length}
-                            transport={preferences.transport}
-                            theme={preferences.theme}
-                            language={preferences.language}
-                            onMoveUp={() => {}} 
-                            onMoveDown={() => {}}
-                            onUpdateNotes={() => {}}
-                            onGenerateImage={handleGenerateImage}
-                            onViewBooking={() => setSelectedBookingStep(step)}
-                            isSpecialEvent={isSpecialEvent(step)}
-                        />
-                     ))}
+                     {steps.map((step, index) => {
+                        const directBooking = getDirectBookingSource(step);
+                        return (
+                          <ItineraryStepCard 
+                              key={`print-${step.id}`} 
+                              step={step} 
+                              index={index} 
+                              totalSteps={steps.length}
+                              transport={preferences.transport}
+                              theme={preferences.theme}
+                              language={preferences.language}
+                              onMoveUp={() => {}} 
+                              onMoveDown={() => {}}
+                              onUpdateNotes={() => {}}
+                              onGenerateImage={handleGenerateImage}
+                              onViewBooking={() => setSelectedBookingStep(step)}
+                              isSpecialEvent={isSpecialEvent(step)}
+                              hasDirectBooking={!!directBooking}
+                          />
+                        );
+                     })}
                      <div className="mt-4 pt-2 border-t border-slate-100 text-xs text-slate-500 italic">
                         {t.results.verify_warning}
                      </div>
                   </div>
 
                   <div className="space-y-4 animate-fade-in print:hidden">
-                        {visibleSteps.map((step, index) => (
-                        <ItineraryStepCard 
-                            key={step.id} 
-                            step={step} 
-                            index={index} 
-                            totalSteps={visibleSteps.length}
-                            transport={preferences.transport}
-                            theme={preferences.theme}
-                            language={preferences.language}
-                            onMoveUp={() => handleMoveStep(step.id, 'up')}
-                            onMoveDown={() => handleMoveStep(step.id, 'down')}
-                            onUpdateNotes={(notes) => handleUpdateNotes(step.id, notes)}
-                            onGenerateImage={handleGenerateImage}
-                            onViewBooking={() => setSelectedBookingStep(step)}
-                            isSpecialEvent={isSpecialEvent(step)}
-                        />
-                        ))}
+                        {visibleSteps.map((step, index) => {
+                            const directBooking = getDirectBookingSource(step);
+                            return (
+                                <ItineraryStepCard 
+                                    key={step.id} 
+                                    step={step} 
+                                    index={index} 
+                                    totalSteps={visibleSteps.length}
+                                    transport={preferences.transport}
+                                    theme={preferences.theme}
+                                    language={preferences.language}
+                                    onMoveUp={() => handleMoveStep(step.id, 'up')}
+                                    onMoveDown={() => handleMoveStep(step.id, 'down')}
+                                    onUpdateNotes={(notes) => handleUpdateNotes(step.id, notes)}
+                                    onGenerateImage={handleGenerateImage}
+                                    onViewBooking={() => setSelectedBookingStep(step)}
+                                    isSpecialEvent={isSpecialEvent(step)}
+                                    hasDirectBooking={!!directBooking}
+                                />
+                            );
+                        })}
 
                         <div className="mt-6 flex justify-center">
                             <p className="text-xs text-slate-400 italic bg-slate-50 px-4 py-2 rounded-lg border border-slate-100">
@@ -556,10 +601,7 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
                          // Priority: 1. Direct Booking Platform (TheFork, etc), 2. Google Maps Place Link (has Reserve btn), 3. Generic Search
                          let bookingUrl = `https://www.google.com/search?q=reservar+mesa+${encodeURIComponent(item.title)}+Amposta`;
                          
-                         const directBookingSource = webSources.find(s => 
-                            (s.title.toLowerCase().includes(item.title.toLowerCase()) || item.title.toLowerCase().includes(s.title.toLowerCase())) &&
-                            isBookingSource(s.url)
-                         );
+                         const directBookingSource = getDirectBookingSource(item);
 
                          const mapPlaceSource = mapSources.find(s => 
                             s.title.toLowerCase().includes(item.title.toLowerCase()) || item.title.toLowerCase().includes(s.title.toLowerCase())
@@ -601,9 +643,9 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
                                             href={bookingUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-100 hover:bg-amber-100 px-3 py-2 rounded-lg transition-colors flex items-center gap-1"
+                                            className={`text-xs font-medium border px-3 py-2 rounded-lg transition-colors flex items-center gap-1 ${directBookingSource ? 'bg-amber-100 text-amber-900 border-amber-200 hover:bg-amber-200' : 'text-amber-700 bg-amber-50 border-amber-100 hover:bg-amber-100'}`}
                                         >
-                                            {t.results.book_table} 🍽️
+                                            {t.results.book_table} {directBookingSource && '⭐'}
                                         </a>
                                     ) : (
                                         <a 
@@ -624,60 +666,189 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
         </div>
       )}
 
-      {/* Booking Info Modal */}
+      {/* Discover Delta Section */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-8 print:hidden">
+          <button
+              onClick={() => setIsDeltaInfoOpen(!isDeltaInfoOpen)}
+              className="w-full flex items-center justify-between p-4 bg-teal-50 hover:bg-teal-100 transition-colors"
+          >
+              <div className="flex items-center gap-2">
+                  <span className="text-xl">🦩</span>
+                  <div className="text-left">
+                      <h3 className="font-bold text-teal-900">{t.delta_info.title}</h3>
+                      <p className="text-xs text-teal-700">{t.delta_info.subtitle}</p>
+                  </div>
+              </div>
+              <div className={`transform transition-transform duration-200 ${isDeltaInfoOpen ? 'rotate-180' : ''}`}>
+                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+          </button>
+          {isDeltaInfoOpen && (
+              <div className="p-6 prose prose-stone prose-sm max-w-none animate-fade-in bg-white">
+                  <ReactMarkdown>{t.delta_info.content}</ReactMarkdown>
+              </div>
+          )}
+      </div>
+
+      {/* Travel Tips Section */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-8 print:hidden">
+          <button
+              onClick={() => setIsTravelTipsOpen(!isTravelTipsOpen)}
+              className="w-full flex items-center justify-between p-4 bg-orange-50 hover:bg-orange-100 transition-colors"
+          >
+              <div className="flex items-center gap-2">
+                  <span className="text-xl">💡</span>
+                  <div className="text-left">
+                      <h3 className="font-bold text-orange-900">{t.travel_tips.title}</h3>
+                      <p className="text-xs text-orange-700">{t.travel_tips.subtitle}</p>
+                  </div>
+              </div>
+              <div className={`transform transition-transform duration-200 ${isTravelTipsOpen ? 'rotate-180' : ''}`}>
+                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+          </button>
+          {isTravelTipsOpen && (
+              <div className="p-6 prose prose-stone prose-sm max-w-none animate-fade-in bg-white">
+                  <ReactMarkdown>{t.travel_tips.content}</ReactMarkdown>
+              </div>
+          )}
+      </div>
+
+      {/* Booking Info Modal (Enhanced) */}
       {selectedBookingStep && (
          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in print:hidden">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in-up">
-               <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                  <h3 className="font-bold text-lg text-stone-800">{selectedBookingStep.title}</h3>
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in-up flex flex-col max-h-[90vh]">
+               <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+                  <h3 className="font-bold text-lg text-stone-800 flex items-center gap-2">
+                    <span className="text-xl">ℹ️</span> {selectedBookingStep.title}
+                  </h3>
                   <button onClick={() => setSelectedBookingStep(null)} className="text-slate-400 hover:text-slate-600">
                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                   </button>
                </div>
-               <div className="p-6">
+               
+               <div className="p-6 overflow-y-auto">
+                  {/* Extracted Details Section */}
+                  {(() => {
+                      const { price, hours } = extractDetails(selectedBookingStep.description);
+                      if (price || hours) {
+                          return (
+                              <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-xl space-y-3">
+                                  {hours && (
+                                      <div className="flex items-start gap-3">
+                                          <div className="bg-blue-100 p-1.5 rounded-lg text-blue-600 mt-0.5">
+                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                          </div>
+                                          <div>
+                                              <span className="block text-xs font-bold text-blue-800 uppercase tracking-wide">Horario / Hours</span>
+                                              <span className="text-sm text-blue-900 font-medium">{hours}</span>
+                                          </div>
+                                      </div>
+                                  )}
+                                  {price && (
+                                      <div className="flex items-start gap-3">
+                                          <div className="bg-blue-100 p-1.5 rounded-lg text-blue-600 mt-0.5">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                                          </div>
+                                          <div>
+                                              <span className="block text-xs font-bold text-blue-800 uppercase tracking-wide">Precio / Price</span>
+                                              <span className="text-sm text-blue-900 font-medium">{price}</span>
+                                          </div>
+                                      </div>
+                                  )}
+                              </div>
+                          );
+                      }
+                      return null;
+                  })()}
+
                   <div className="text-sm text-stone-600 prose prose-sm max-w-none">
                      <ReactMarkdown>{selectedBookingStep.description}</ReactMarkdown>
                   </div>
-                  <div className="mt-6 flex flex-col gap-3">
-                     <h4 className="text-xs font-bold text-stone-400 uppercase">Enlaces de interés</h4>
-                     <div className="flex flex-wrap gap-2">
-                        {/* Try to find official source from grounding */}
+
+                  <div className="mt-8 flex flex-col gap-3">
+                     <h4 className="text-xs font-bold text-stone-400 uppercase">Enlaces de reserva e info</h4>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {(() => {
-                            const matchedSource = webSources.find(s => 
+                            // Enhanced Modal Logic
+                            const matchedWebSource = webSources.find(s => 
                                 s.title.toLowerCase().includes(selectedBookingStep.title.toLowerCase()) || 
                                 selectedBookingStep.title.toLowerCase().includes(s.title.toLowerCase())
                             );
-                            if (matchedSource) {
-                                return (
-                                    <a 
-                                        href={matchedSource.url}
+                            
+                            const matchedMapSource = mapSources.find(s => 
+                                s.title.toLowerCase().includes(selectedBookingStep.title.toLowerCase()) || 
+                                selectedBookingStep.title.toLowerCase().includes(s.title.toLowerCase())
+                            );
+                            
+                            const directBooking = getDirectBookingSource(selectedBookingStep);
+
+                            return (
+                                <>
+                                    {directBooking ? (
+                                        <a 
+                                            href={directBooking.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="col-span-1 sm:col-span-2 text-center text-sm font-bold bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md hover:scale-[1.01]"
+                                        >
+                                            <span>📅</span> Reservar / Book Now
+                                        </a>
+                                    ) : null}
+
+                                    {matchedWebSource ? (
+                                        <a 
+                                            href={matchedWebSource.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={`text-center text-sm font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm ${directBooking ? 'bg-slate-100 text-stone-700 hover:bg-slate-200' : 'col-span-1 sm:col-span-2 bg-teal-600 hover:bg-teal-700 text-white'}`}
+                                        >
+                                            <span>🌍</span> {t.results.web_info}
+                                        </a>
+                                    ) : (
+                                        !directBooking && (
+                                            <a 
+                                                href={`https://www.google.com/search?q=${encodeURIComponent(selectedBookingStep.title + " Amposta oficial")}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="col-span-1 sm:col-span-2 text-center text-sm font-bold bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
+                                            >
+                                                <span>🔎</span> Buscar Web Oficial
+                                            </a>
+                                        )
+                                    )}
+
+                                    {matchedMapSource ? (
+                                        <a 
+                                            href={matchedMapSource.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-center text-sm font-medium bg-slate-100 hover:bg-slate-200 text-stone-700 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                        >
+                                            <span>📍</span> Google Maps
+                                        </a>
+                                    ) : (
+                                        <a 
+                                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedBookingStep.title + " Amposta")}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-center text-sm font-medium bg-slate-100 hover:bg-slate-200 text-stone-700 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                        >
+                                            <span>📍</span> Google Maps
+                                        </a>
+                                    )}
+
+                                     <a 
+                                        href={`https://www.tripadvisor.com/Search?q=${encodeURIComponent(selectedBookingStep.title + " Amposta")}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex-1 text-center text-sm font-bold bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
-                                    >
-                                        <span>🌍</span> Web Oficial / Booking
-                                    </a>
-                                );
-                            }
-                            return null;
+                                        className="text-center text-sm font-medium bg-teal-50 hover:bg-teal-100 text-teal-800 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                     >
+                                        <span>🦉</span> TripAdvisor
+                                     </a>
+                                </>
+                            );
                         })()}
-
-                         <a 
-                            href={`https://www.google.com/search?q=${encodeURIComponent(selectedBookingStep.title + " Amposta horarios")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 text-center text-sm font-medium bg-slate-100 hover:bg-slate-200 text-stone-700 py-2.5 rounded-lg transition-colors"
-                         >
-                            Ver Horarios Google
-                         </a>
-                         <a 
-                            href={`https://www.tripadvisor.com/Search?q=${encodeURIComponent(selectedBookingStep.title + " Amposta")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 text-center text-sm font-medium bg-teal-50 hover:bg-teal-100 text-teal-800 py-2.5 rounded-lg transition-colors"
-                         >
-                            Opiniones TripAdvisor
-                         </a>
                      </div>
                   </div>
                </div>
