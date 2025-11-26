@@ -3,6 +3,75 @@ import { GoogleGenAI } from "@google/genai";
 import { UserPreferences, ItineraryResult, GroundingSource, ItineraryStep, Theme, Transport, Language } from "../types";
 import { TRANSLATIONS } from "../constants";
 
+// Helper to determine if a key looks valid
+const isValidKey = (key: string | undefined): boolean => {
+    if (!key) return false;
+    // Basic Google API Key validation: Must start with AIza and be approx 39 chars
+    return key.startsWith("AIza") && key.length > 35;
+};
+
+const getApiKeyInfo = () => {
+  // We will search multiple locations for a valid key.
+  // Priority: 
+  // 1. Valid VITE_GEMINI_API_KEY
+  // 2. Valid API_KEY
+  // 3. Valid import.meta.env.VITE_GEMINI_API_KEY
+  
+  const candidates: { val: string | undefined, src: string }[] = [];
+
+  // Source 1: Vite standard env
+  try {
+      // @ts-ignore
+      if (typeof import.meta !== 'undefined' && import.meta.env) {
+          // @ts-ignore
+          candidates.push({ val: import.meta.env.VITE_GEMINI_API_KEY, src: "VITE_GEMINI_API_KEY" });
+          // @ts-ignore
+          candidates.push({ val: import.meta.env.GEMINI_API_KEY, src: "GEMINI_API_KEY" });
+          // @ts-ignore
+          candidates.push({ val: import.meta.env.API_KEY, src: "API_KEY" });
+      }
+  } catch (e) {}
+
+  // Source 2: Process env (Node/Webpack/Some Vite configs)
+  try {
+      if (typeof process !== 'undefined' && process.env) {
+          candidates.push({ val: import.meta.env.VITE_GEMINI_API_KEY, src: "import.meta.env.VITE_GEMINI_API_KEY" });
+          candidates.push({ val: process.env.VITE_GEMINI_API_KEY, src: "process.env.VITE_GEMINI_API_KEY" });
+      }
+  } catch (e) {}
+
+  // Search for the first VALID candidate
+  for (const c of candidates) {
+      if (!c.val) continue;
+      
+      let key = c.val.trim();
+      
+      // Clean up common paste errors like 'KEY=AIza...'
+      if (key.includes('=')) {
+          const parts = key.split('=');
+          key = parts[parts.length - 1].trim();
+      }
+      // Clean quotes
+      if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+          key = key.substring(1, key.length - 1);
+      }
+
+      // Check validation
+      if (isValidKey(key)) {
+          return { apiKey: key, source: c.src, status: 'valid' };
+      }
+  }
+
+  // If we are here, we didn't find a valid key. 
+  // Return the first non-empty placeholder we found for debugging purposes.
+  const placeholder = candidates.find(c => c.val && c.val.length > 0);
+  if (placeholder) {
+      return { apiKey: placeholder.val, source: placeholder.src, status: 'invalid_placeholder' };
+  }
+
+  return { apiKey: undefined, source: "None", status: 'missing' };
+};
+
 const getAiClient = () => {
   return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
