@@ -1,5 +1,4 @@
 
-
 import { Theme, Transport, Language } from './types';
 
 export const THEME_ICONS: Record<Theme, string> = {
@@ -94,6 +93,9 @@ interface Translation {
     check_bus_stop: string;
     check_river_pier: string;
     special_event: string;
+    step_by_step_btn: string;
+    loading_instructions: string;
+    instructions_title: string;
   };
   errors: {
     generic: string;
@@ -196,7 +198,10 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       generating_image: "Generant...",
       check_bus_stop: "Veure parada bus",
       check_river_pier: "Veure embarcador",
-      special_event: "Esdeveniment Especial"
+      special_event: "Esdeveniment Especial",
+      step_by_step_btn: "Guia Pas a Pas",
+      loading_instructions: "Generant passos...",
+      instructions_title: "Com fer aquesta activitat:"
     },
     errors: {
       generic: "S'ha produït un error inesperat.",
@@ -230,6 +235,8 @@ El Delta ofereix una varietat de paisatges que canvien amb les estacions:
 *   **🍽️ Horaris:** Els dinars solen ser entre les 13:30 i 15:30, i els sopars entre les 21:00 i 23:00. Moltes cuines tanquen fora d'aquests horaris.
 *   **🗣️ Idioma:** Es parla tant català com castellà. Un senzill "Bon dia" o "Gràcies" sempre és ben rebut pels locals.
 *   **☀️ Protecció:** El sol és molt fort als espais oberts del Delta on no hi ha ombres naturals. Porta sempre gorra, ulleres de sol i protecció solar.
+*   **💵 Propines:** No són obligatòries, però deixar un 5-10% és un bon costum si el servei agrada.
+*   **🆘 Emergències:** **112** (General), **061** (Salut), **062** (Guàrdia Civil).
 `
     }
   },
@@ -279,7 +286,7 @@ El Delta ofereix una varietat de paisatges que canvien amb les estacions:
       scheduled_date: "Fecha programada",
       suggested_route: "Ruta sugerida",
       river_note_upriver: "Mostrando ruta aproximada del río entre Amposta y localidades históricas (Tortosa/Miravet). Consulta horarios.",
-      river_note_local: "Mostrando accesibilidad desde el embarcadero detectado hacia los puntos de interés.",
+      river_note_local: "Mostrando accesibilidad desde el embarcadero detectatado hacia los puntos de interés.",
       view_full_river_route: "Ver ruta fluvial completa",
       pier_locations: "Embarcaderos clave",
       river_route_title: "Ruta Fluvial Ebro",
@@ -317,7 +324,10 @@ El Delta ofereix una varietat de paisatges que canvien amb les estacions:
       generating_image: "Generando...",
       check_bus_stop: "Ver parada bus",
       check_river_pier: "Ver embarcadero",
-      special_event: "Evento Especial"
+      special_event: "Evento Especial",
+      step_by_step_btn: "Paso a Paso",
+      loading_instructions: "Generando guía...",
+      instructions_title: "Cómo realizar esta actividad:"
     },
     errors: {
       generic: "Ocurrió un error inesperado.",
@@ -344,13 +354,15 @@ El Delta ofrece una variedad de paisajes que cambian con las estaciones:
     },
     travel_tips: {
         title: "Consejos de Viaje",
-        subtitle: "Información práctica para tu visita",
+        subtitle: "Información práctica, seguridad y costumbres",
         content: `
-*   **🦟 Mosquitos:** Es imprescindible llevar repelente fuerte, especialmente si visitas el Delta en verano o durante el amanecer/atardecer.
-*   **📅 Mejor época:** Primavera (abril-mayo) y otoño (septiembre-octubre) son ideales para observar aves. El verano es perfecto para disfrutar de las playas.
-*   **🍽️ Horarios:** Las comidas suelen ser entre las 13:30 y 15:30, y las cenas entre las 21:00 y 23:00. Muchas cocinas cierran fuera de estos horarios.
-*   **🗣️ Idioma:** Se habla tanto catalán como castellano. Un sencillo "Bon dia" o "Gracias" siempre es bien recibido por los locales.
-*   **☀️ Protección:** El sol es muy fuerte en los espacios abiertos del Delta donde no hay sombras naturales. Lleva siempre gorra, gafas de sol y protección solar.
+*   **🦟 Mosquitos:** Imprescindible repelente fuerte (especialmente en verano y al atardecer).
+*   **📅 Mejor época:** Primavera/Otoño (aves) y Verano (playa).
+*   **🍽️ Horarios:** Comida 13:30-15:30 | Cena 21:00-23:00.
+*   **🗣️ Idioma:** Catalán y Castellano. Un "Bon dia" siempre se agradece.
+*   **☀️ Protección:** El sol es muy fuerte; lleva gorra y crema solar.
+*   **💵 Propinas:** No obligatorias, pero dejar un 5-10% es costumbre si el servicio es bueno.
+*   **🆘 Emergencias:** **112** (General), **061** (Salud), **062** (Guardia Civil).
 `
     }
   },
@@ -438,7 +450,10 @@ El Delta ofrece una variedad de paisajes que cambian con las estaciones:
       generating_image: "Generating...",
       check_bus_stop: "Check bus stop",
       check_river_pier: "Check river pier",
-      special_event: "Special Event"
+      special_event: "Special Event",
+      step_by_step_btn: "Step-by-step",
+      loading_instructions: "Generating guide...",
+      instructions_title: "How to do this activity:"
     },
     errors: {
       generic: "An unexpected error occurred.",
@@ -465,13 +480,15 @@ The Delta offers a variety of landscapes that change with the seasons:
     },
     travel_tips: {
         title: "Travel Tips",
-        subtitle: "Practical information for your visit",
+        subtitle: "Practical info, safety & customs",
         content: `
 *   **🦟 Mosquitoes:** Strong repellent is essential, especially if visiting the Delta in summer or at sunrise/sunset.
 *   **📅 Best Time:** Spring (April-May) and Autumn (September-October) are ideal for birdwatching. Summer is perfect for enjoying the beaches.
 *   **🍽️ Timings:** Lunch is usually between 1:30 PM and 3:30 PM, and dinner between 9:00 PM and 11:00 PM. Many kitchens close outside these hours.
-*   **🗣️ Language:** Both Catalan and Spanish are spoken. A simple "Bon dia" (Good morning) or "Gracias" is always welcomed by locals.
-*   **☀️ Protection:** The sun is very strong in the open Delta where there are no natural shades. Always bring a hat, sunglasses, and sunscreen.
+*   **🗣️ Language:** Both Catalan and Spanish are spoken. A simple "Bon dia" is always appreciated.
+*   **☀️ Protection:** The sun is very strong; wear a hat and sunscreen.
+*   **💵 Tipping:** Not mandatory, but 5-10% is customary for good service.
+*   **🆘 Emergencies:** **112** (General), **061** (Health).
 `
     }
   }

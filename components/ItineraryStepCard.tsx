@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ItineraryStep, Transport, Theme, Language } from '../types';
@@ -14,9 +15,12 @@ interface ItineraryStepCardProps {
   onMoveDown: () => void;
   onUpdateNotes: (notes: string) => void;
   onGenerateImage?: (stepId: string) => Promise<void>;
+  onGenerateInstructions?: (stepId: string) => Promise<void>;
   onViewBooking: () => void;
   isSpecialEvent?: boolean;
   hasDirectBooking?: boolean;
+  userRating?: number;
+  onRate?: (rating: number) => void;
 }
 
 const THEME_GRADIENTS: Record<Theme, string> = {
@@ -68,14 +72,19 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
   onMoveDown,
   onUpdateNotes,
   onGenerateImage,
+  onGenerateInstructions,
   onViewBooking,
   isSpecialEvent,
-  hasDirectBooking
+  hasDirectBooking,
+  userRating,
+  onRate
 }) => {
   const [imgError, setImgError] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [tempNote, setTempNote] = useState(step.userNotes || '');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingInstructions, setIsGeneratingInstructions] = useState(false);
+  const [areInstructionsOpen, setAreInstructionsOpen] = useState(false);
 
   const t = TRANSLATIONS[language];
 
@@ -113,14 +122,15 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
   const placeholderIcon = THEME_ICONS[effectiveTheme] || '🗺️';
   
   // Heuristic for "Bookable" steps
+  // We rely on keywords to identify steps that likely need a ticket or reservation.
   const isBookable = (() => {
     const title = step.title.toLowerCase();
     const desc = step.description.toLowerCase();
 
-    // Explicit exclusions
+    // Explicit exclusions for generic steps
     if (title.includes('check-in') || title.includes('check-out') || title.includes('esmorzar') || title.includes('desayuno') || title.includes('breakfast')) return false;
 
-    // Strong positive signals for attractions and accommodations
+    // Strong positive signals for attractions, restaurants, and accommodations
     const keywords = [
         'museu', 'museum', 'castell', 'castle', 'castillo', 'centre', 'centro', 'center', 'exposic',
         'restaurant', 'sopar', 'cena', 'dinner', 'dinar', 'almuerzo', 'lunch',
@@ -134,11 +144,10 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
 
     if (keywords.some(k => title.includes(k) || desc.includes(k))) return true;
 
-    // Fallback: exclude generic "Walk/View" steps, include others if length sufficient
-    const genericKeywords = ['passeig', 'paseo', 'walk', 'caminar', 'vista', 'view', 'mirador', 'arribada', 'llegada', 'sortida', 'salida', 'descans'];
-    if (genericKeywords.some(k => title.includes(k))) return false;
+    // If we have a direct booking link (detected in parent), it is definitely bookable
+    if (hasDirectBooking) return true;
 
-    return step.title.length > 3;
+    return false;
   })();
 
   const handleSaveNote = () => {
@@ -164,10 +173,25 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
       setIsGenerating(false);
   };
 
+  const handleInstructionsClick = async () => {
+      if (step.detailedInstructions) {
+          setAreInstructionsOpen(!areInstructionsOpen);
+          return;
+      }
+      
+      if (!onGenerateInstructions || isGeneratingInstructions) return;
+      
+      setIsGeneratingInstructions(true);
+      setAreInstructionsOpen(true); // Open section to show loading state
+      await onGenerateInstructions(step.id);
+      setIsGeneratingInstructions(false);
+  };
+
   const containerClasses = isSpecialEvent 
     ? "bg-white rounded-xl border-2 border-fuchsia-400 ring-4 ring-fuchsia-50 shadow-lg shadow-fuchsia-100/50 hover:shadow-xl transition-all duration-200 overflow-hidden flex flex-col md:flex-row group h-full md:min-h-[320px] relative z-10"
     : "bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col md:flex-row group h-full md:min-h-[320px]";
 
+  // Only show button if identified as bookable or if we found a direct booking link
   const showBookingBtn = isBookable || hasDirectBooking;
 
   return (
@@ -187,7 +211,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
         </div>
 
         {/* Image Section */}
-        <div className={`relative h-64 md:h-auto md:w-2/5 lg:w-1/3 shrink-0 overflow-hidden border-b md:border-b-0 md:border-r border-slate-200 ${!hasImage ? placeholderGradient : 'bg-slate-100'}`}>
+        <div className={`relative h-72 md:h-auto md:w-5/12 lg:w-2/5 shrink-0 overflow-hidden border-b md:border-b-0 md:border-r border-slate-200 ${!hasImage ? placeholderGradient : 'bg-slate-100'}`}>
             {hasImage ? (
                 <div className="w-full h-full relative group-hover:scale-[1.02] transition-transform duration-700 ease-out">
                   <img 
@@ -214,7 +238,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                    <div className="absolute top-[-10%] right-[-10%] w-32 h-32 bg-white/40 rounded-full blur-2xl"></div>
                    <div className="absolute bottom-[-10%] left-[-10%] w-32 h-32 bg-black/5 rounded-full blur-2xl"></div>
                    
-                   <span className="relative z-10 text-8xl md:text-9xl filter drop-shadow-md transform group-hover/placeholder:scale-110 transition-transform duration-500 select-none opacity-80" aria-hidden="true">
+                   <span className="relative z-10 text-7xl md:text-8xl lg:text-9xl filter drop-shadow-md transform group-hover/placeholder:scale-110 transition-transform duration-500 select-none opacity-90" aria-hidden="true">
                      {placeholderIcon}
                    </span>
 
@@ -257,6 +281,26 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                 </span>
               )}
             </div>
+
+            {/* Star Rating */}
+            <div className="flex items-center gap-1 mb-3" title="Rate this experience">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRate && onRate(star);
+                  }}
+                  className={`text-xl focus:outline-none transition-all duration-200 transform hover:scale-110 ${
+                    star <= (userRating || 0) 
+                      ? 'text-amber-400 drop-shadow-sm' 
+                      : 'text-slate-200 hover:text-amber-200'
+                  }`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
             
             <div className="text-stone-600 text-sm leading-relaxed prose prose-sm max-w-none">
               <ReactMarkdown
@@ -270,6 +314,30 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                 {step.description}
               </ReactMarkdown>
             </div>
+
+            {/* Detailed Instructions Section */}
+            {areInstructionsOpen && (
+                <div className="mt-4 p-4 bg-teal-50 border border-teal-100 rounded-lg animate-fade-in text-sm text-stone-700">
+                    <h4 className="font-bold text-teal-800 mb-2 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        {t.results.instructions_title}
+                    </h4>
+                    {isGeneratingInstructions ? (
+                        <div className="flex items-center gap-2 text-teal-600 italic">
+                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            {t.results.loading_instructions}
+                        </div>
+                    ) : (
+                        step.detailedInstructions && (
+                            <ul className="list-decimal pl-5 space-y-1">
+                                {step.detailedInstructions.map((instruction, i) => (
+                                    <li key={i}>{instruction}</li>
+                                ))}
+                            </ul>
+                        )
+                    )}
+                </div>
+            )}
             
             {/* Display user notes if present */}
             {step.userNotes && (
@@ -343,6 +411,20 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                   )}
                   {t.results.view_booking_btn}
                 </button>
+              )}
+
+              {onGenerateInstructions && (
+                  <button
+                    onClick={handleInstructionsClick}
+                    className={`group/btn flex items-center gap-2 text-xs font-medium transition-colors px-3 py-2 rounded-lg border ${
+                        areInstructionsOpen
+                        ? "bg-teal-50 border-teal-200 text-teal-800"
+                        : "bg-slate-50 hover:bg-teal-50 border-transparent hover:border-teal-100 text-slate-500 hover:text-teal-600"
+                    }`}
+                  >
+                    <svg className={`w-4 h-4 transition-colors ${areInstructionsOpen ? 'text-teal-600' : 'text-slate-400 group-hover/btn:text-teal-500'}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    {t.results.step_by_step_btn}
+                  </button>
               )}
 
               <button 

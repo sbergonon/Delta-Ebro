@@ -1,5 +1,4 @@
 
-
 export type Language = 'ca' | 'es' | 'en';
 
 export enum Theme {
@@ -47,6 +46,7 @@ export interface ItineraryStep {
   description: string;
   imageUrl?: string;
   userNotes?: string;
+  detailedInstructions?: string[];
 }
 
 export interface ItineraryResult {

@@ -1,5 +1,6 @@
+
 import { GoogleGenAI } from "@google/genai";
-import { UserPreferences, ItineraryResult, GroundingSource, ItineraryStep, Theme, Transport } from "../types";
+import { UserPreferences, ItineraryResult, GroundingSource, ItineraryStep, Theme, Transport, Language } from "../types";
 import { TRANSLATIONS } from "../constants";
 
 const getAiClient = () => {
@@ -27,9 +28,44 @@ export const generateStepImage = async (title: string, description: string): Pro
              }
         }
         return null;
-    } catch (error) {
+    } catch (error: any) {
+        // Suppress 429 Resource Exhausted errors to avoid noise, just return null
+        if (error.status === 429 || error.code === 429 || error.message?.includes('429') || error.message?.includes('quota')) {
+            console.warn("Image generation skipped: Quota exceeded.");
+            return null;
+        }
         console.error("Image gen error", error);
         return null;
+    }
+};
+
+export const generateStepInstructions = async (title: string, description: string, language: Language): Promise<string[]> => {
+    try {
+        const ai = getAiClient();
+        const langName = language === 'ca' ? 'Catalan' : language === 'es' ? 'Spanish' : 'English';
+        const prompt = `Provide a concise, ordered list of 3-6 step-by-step instructions for a tourist to experience: "${title}". 
+        Context: "${description}". 
+        Location: Amposta/Delta de l'Ebre. 
+        Language: ${langName}. 
+        Format: Return ONLY the list items, one per line, starting with "- ". Do not include numbering or titles.`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                temperature: 0.3,
+                maxOutputTokens: 300,
+            }
+        });
+
+        const text = response.text || "";
+        return text.split('\n')
+                   .map(line => line.replace(/^-\s*/, '').replace(/^\d+\.\s*/, '').trim())
+                   .filter(line => line.length > 0);
+
+    } catch (error) {
+        console.error("Error generating instructions:", error);
+        return [];
     }
 };
 
