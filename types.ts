@@ -1,4 +1,5 @@
 
+
 export type Language = 'ca' | 'es' | 'en';
 
 export enum Theme {
@@ -53,4 +54,10 @@ export interface ItineraryResult {
   markdown: string;
   steps: ItineraryStep[];
   sources: GroundingSource[];
+}
+
+export interface NearbyAttraction {
+  name: string;
+  type: string;
+  distance: string;
 }
