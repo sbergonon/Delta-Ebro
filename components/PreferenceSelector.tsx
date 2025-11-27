@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { UserPreferences, Theme, Transport } from '../types';
@@ -214,7 +215,7 @@ const PreferenceSelector: React.FC<PreferenceSelectorProps> = ({ prefs, onChange
                                     }`}
                                 >
                                     <span>{TRANSPORT_ICONS[tr]}</span>
-                                    {t.transport_labels[tr]}
+                                    {t.results.transport_labels[tr]}
                                     {isSelected && <span className="ml-1 text-teal-200">✓</span>}
                                 </button>
                             );

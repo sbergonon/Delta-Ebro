@@ -96,6 +96,12 @@ interface Translation {
     step_by_step_btn: string;
     loading_instructions: string;
     instructions_title: string;
+    nearby_attractions_btn: string;
+    loading_nearby: string;
+    nearby_title: string;
+    no_nearby_found: string;
+    copy_step: string;
+    copied: string;
   };
   errors: {
     generic: string;
@@ -173,7 +179,7 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       book_table: "Reservar Taula",
       search_tickets: "Cercar Entrades",
       verify_warning: "* Es recomana verificar preus i horaris directament als llocs oficials.",
-      detected_places: "Punts d'interès detectats",
+      detected_places: "Puntos d'interès detectats",
       verified_sources: "Fonts Web Verificades",
       view_map: "Veure a l'app",
       verify_btn: "Verificar info",
@@ -193,7 +199,7 @@ export const TRANSLATIONS: Record<Language, Translation> = {
         [Transport.BIKE]: "Bici",
         [Transport.MIX]: "Combinat"
       },
-      view_booking_btn: "Info & Reserves",
+      view_booking_btn: "Reservar Activitat",
       generate_image_btn: "Generar Imatge AI",
       generating_image: "Generant...",
       check_bus_stop: "Veure parada bus",
@@ -201,7 +207,13 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       special_event: "Esdeveniment Especial",
       step_by_step_btn: "Guia Pas a Pas",
       loading_instructions: "Generant passos...",
-      instructions_title: "Com fer aquesta activitat:"
+      instructions_title: "Com fer aquesta activitat:",
+      nearby_attractions_btn: "A prop d'aquí",
+      loading_nearby: "Buscant llocs...",
+      nearby_title: "També a prop (1km):",
+      no_nearby_found: "No s'han trobat llocs destacats a prop.",
+      copy_step: "Copiar",
+      copied: "Copiat!"
     },
     errors: {
       generic: "S'ha produït un error inesperat.",
@@ -228,13 +240,13 @@ El Delta ofereix una varietat de paisatges que canvien amb les estacions:
     },
     travel_tips: {
         title: "Consells de Viatge",
-        subtitle: "Informació pràctica per a la teva visita",
+        subtitle: "Informació pràctica, seguretat i costums",
         content: `
-*   **🦟 Mosquits:** Imprescindible portar repel·lent fort, especialment si visites el Delta a l'estiu o durant la sortida/posta de sol.
-*   **📅 Millor època:** Primavera (abril-maig) i tardor (setembre-octubre) són ideals per a l'observació d'aus. L'estiu és perfecte per gaudir de les platges.
-*   **🍽️ Horaris:** Els dinars solen ser entre les 13:30 i 15:30, i els sopars entre les 21:00 i 23:00. Moltes cuines tanquen fora d'aquests horaris.
-*   **🗣️ Idioma:** Es parla tant català com castellà. Un senzill "Bon dia" o "Gràcies" sempre és ben rebut pels locals.
-*   **☀️ Protecció:** El sol és molt fort als espais oberts del Delta on no hi ha ombres naturals. Porta sempre gorra, ulleres de sol i protecció solar.
+*   **🦟 Mosquits:** Imprescindible repel·lent fort, especialment a l'estiu i al capvespre.
+*   **📅 Millor època:** Primavera/Tardor (aus) i Estiu (platja).
+*   **🍽️ Horaris:** Dinar 13:30-15:30 | Sopar 21:00-23:00.
+*   **🗣️ Idioma:** Català i Castellà. Un "Bon dia" sempre s'agraeix.
+*   **☀️ Protecció:** El sol al Delta crema molt; porta gorra i crema solar.
 *   **💵 Propines:** No són obligatòries, però deixar un 5-10% és un bon costum si el servei agrada.
 *   **🆘 Emergències:** **112** (General), **061** (Salut), **062** (Guàrdia Civil).
 `
@@ -319,7 +331,7 @@ El Delta ofereix una varietat de paisatges que canvien amb les estacions:
         [Transport.BIKE]: "Bici",
         [Transport.MIX]: "Combinado"
       },
-      view_booking_btn: "Info y Reservas",
+      view_booking_btn: "Reservar Actividad",
       generate_image_btn: "Generar Imagen AI",
       generating_image: "Generando...",
       check_bus_stop: "Ver parada bus",
@@ -327,7 +339,13 @@ El Delta ofereix una varietat de paisatges que canvien amb les estacions:
       special_event: "Evento Especial",
       step_by_step_btn: "Paso a Paso",
       loading_instructions: "Generando guía...",
-      instructions_title: "Cómo realizar esta actividad:"
+      instructions_title: "Cómo realizar esta actividad:",
+      nearby_attractions_btn: "Cerca de aquí",
+      loading_nearby: "Buscando lugares...",
+      nearby_title: "También cerca (1km):",
+      no_nearby_found: "No se han encontrado lugares destacados cerca.",
+      copy_step: "Copiar",
+      copied: "¡Copiado!"
     },
     errors: {
       generic: "Ocurrió un error inesperado.",
@@ -445,7 +463,7 @@ El Delta ofrece una variedad de paisajes que cambian con las estaciones:
         [Transport.BIKE]: "Bike",
         [Transport.MIX]: "Combined"
       },
-      view_booking_btn: "Info & Booking",
+      view_booking_btn: "Book Activity",
       generate_image_btn: "Generate AI Image",
       generating_image: "Generating...",
       check_bus_stop: "Check bus stop",
@@ -453,7 +471,13 @@ El Delta ofrece una variedad de paisajes que cambian con las estaciones:
       special_event: "Special Event",
       step_by_step_btn: "Step-by-step",
       loading_instructions: "Generating guide...",
-      instructions_title: "How to do this activity:"
+      instructions_title: "How to do this activity:",
+      nearby_attractions_btn: "Nearby",
+      loading_nearby: "Searching places...",
+      nearby_title: "Also nearby (1km):",
+      no_nearby_found: "No major attractions found nearby.",
+      copy_step: "Copy",
+      copied: "Copied!"
     },
     errors: {
       generic: "An unexpected error occurred.",

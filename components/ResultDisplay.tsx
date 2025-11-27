@@ -559,6 +559,7 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
                               onGenerateImage={handleGenerateImage}
                               onGenerateInstructions={handleGenerateInstructions}
                               onViewBooking={() => setSelectedBookingStep(step)}
+                              onFetchNearby={() => handleFetchNearby(step.id)}
                               isSpecialEvent={isSpecialEvent(step)}
                               hasDirectBooking={!!directBooking}
                               userRating={ratings[step.title] || 0}
