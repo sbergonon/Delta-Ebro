@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ItineraryStep, Transport, Theme, Language, NearbyAttraction } from '../types';
 import { THEME_ICONS, TRANSLATIONS } from '../constants';
@@ -91,11 +91,15 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
   const [isLoadingNearby, setIsLoadingNearby] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Ref to track if we have already attempted to regenerate this image to avoid loops
+  const hasRetriedGeneration = useRef(false);
+
   const t = TRANSLATIONS[language];
 
-  // Reset image error state when image URL changes
+  // Reset image error state when image URL changes (e.g. new generated image arrives)
   useEffect(() => {
       setImgError(false);
+      hasRetriedGeneration.current = false;
   }, [step.imageUrl]);
 
   // Reset loading states when step data updates
@@ -137,10 +141,8 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
     const title = step.title.toLowerCase();
     const desc = step.description.toLowerCase();
 
-    // Explicit exclusions
     if (title.includes('check-in') || title.includes('check-out') || title.includes('esmorzar') || title.includes('desayuno') || title.includes('breakfast')) return false;
 
-    // Strong positive signals for attractions, restaurants, and accommodations
     const keywords = [
         'museu', 'museum', 'castell', 'castle', 'castillo', 'centre', 'centro', 'center', 'exposic',
         'restaurant', 'sopar', 'cena', 'dinner', 'dinar', 'almuerzo', 'lunch',
@@ -153,10 +155,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
     ];
 
     if (keywords.some(k => title.includes(k) || desc.includes(k))) return true;
-
-    // If we have a direct booking link (detected in parent), it is definitely bookable
     if (hasDirectBooking) return true;
-
     return false;
   })();
 
@@ -192,7 +191,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
       if (!onGenerateInstructions || isGeneratingInstructions) return;
       
       setIsGeneratingInstructions(true);
-      setAreInstructionsOpen(true); // Open section to show loading state
+      setAreInstructionsOpen(true);
       await onGenerateInstructions(step.id);
       setIsGeneratingInstructions(false);
   };
@@ -225,7 +224,6 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
     ? "bg-white rounded-xl border-2 border-fuchsia-400 ring-4 ring-fuchsia-50 shadow-lg shadow-fuchsia-100/50 hover:shadow-xl transition-all duration-200 overflow-hidden flex flex-col md:flex-row group h-full md:min-h-[320px] relative z-10"
     : "bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col md:flex-row group h-full md:min-h-[320px]";
 
-  // Only show button if identified as bookable or if we found a direct booking link
   const showBookingBtn = isBookable || hasDirectBooking;
 
   return (
@@ -253,8 +251,11 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                       alt={step.title}
                       className="w-full h-full object-cover"
                       onError={() => {
+                        console.warn(`Image load error for ${step.title}.`);
                         setImgError(true);
-                        if (onGenerateImage && step.imageUrl && !step.imageUrl.startsWith('data:')) {
+                        // Prevent infinite loops: only retry once automatically
+                        if (onGenerateImage && !hasRetriedGeneration.current && step.imageUrl && !step.imageUrl.startsWith('data:')) {
+                            hasRetriedGeneration.current = true;
                             onGenerateImage(step.id);
                         }
                       }}
