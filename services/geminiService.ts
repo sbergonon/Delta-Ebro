@@ -63,8 +63,7 @@ async function retryOperation<T>(operation: () => Promise<T>, retries = 3, initi
 }
 
 export const generateStepImage = async (title: string, description: string): Promise<string | null> => {
-    // We don't strictly retry images to avoid slowing down the UI too much, 
-    // but we suppress the 503 error so it doesn't look like a crash.
+    // 1. Try Gemini Image Generation first (High Quality)
     try {
         const ai = getAiClient();
         const response = await ai.models.generateContent({
@@ -84,20 +83,27 @@ export const generateStepImage = async (title: string, description: string): Pro
                  return `data:image/png;base64,${part.inlineData.data}`;
              }
         }
-        return null;
     } catch (error: any) {
-        if (error.status === 429 || error.code === 429 || error.message?.includes('429') || error.message?.includes('quota')) {
-            console.warn("Image generation skipped: Quota exceeded.");
-            return null;
-        }
-        if (error.status === 503 || error.code === 503) {
-            console.warn("Image generation skipped: Model overloaded.");
-            return null;
-        }
-        // Don't log 400 errors if it's just image gen failing
-        if (error.message?.includes('API key')) {
-             console.error("API Key Error in Image Gen:", error);
-        }
+        // Log but don't stop, we will fallback
+        const isQuota = error.status === 429 || error.code === 429 || error.message?.includes('429');
+        const isOverloaded = error.status === 503 || error.code === 503;
+        
+        if (isQuota) console.warn("Gemini Image Quota Exceeded. Switching to fallback.");
+        else if (isOverloaded) console.warn("Gemini Image Model Overloaded. Switching to fallback.");
+        else console.warn("Gemini Image Generation Failed:", error.message);
+    }
+
+    // 2. Fallback Strategy: Use Pollinations.ai (Free, No Auth) to ensure an image always appears
+    // This prevents the "icons only" issue in production when quotas are hit.
+    try {
+        console.log(`Using fallback image generator for: ${title}`);
+        // Create a descriptive prompt for the fallback generator
+        const prompt = encodeURIComponent(`${title} landmark in Amposta Ebro Delta Spain sunny bright photorealistic tourism`);
+        // Add a random seed to prevent caching issues if multiple steps have similar titles
+        const seed = Math.floor(Math.random() * 1000);
+        return `https://pollinations.ai/p/${prompt}?width=800&height=600&nologo=true&seed=${seed}&model=flux`;
+    } catch (e) {
+        console.error("Fallback image generation failed", e);
         return null;
     }
 };
