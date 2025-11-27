@@ -1,79 +1,47 @@
 
-import { GoogleGenAI } from "@google/genai";
-import { UserPreferences, ItineraryResult, GroundingSource, ItineraryStep, Theme, Transport, Language } from "../types";
+import { GoogleGenAI, Type } from "@google/genai";
+import { UserPreferences, ItineraryResult, GroundingSource, ItineraryStep, Theme, Transport, Language, NearbyAttraction } from "../types";
 import { TRANSLATIONS } from "../constants";
 
-// Helper to determine if a key looks valid
-const isValidKey = (key: string | undefined): boolean => {
-    if (!key) return false;
-    // Basic Google API Key validation: Must start with AIza and be approx 39 chars
-    return key.startsWith("AIza") && key.length > 35;
-};
+// Robust API Key retrieval function
+const getApiKey = (): string => {
+  let key = '';
 
-const getApiKeyInfo = () => {
-  // We will search multiple locations for a valid key.
-  // Priority: 
-  // 1. Valid VITE_GEMINI_API_KEY
-  // 2. Valid API_KEY
-  // 3. Valid import.meta.env.VITE_GEMINI_API_KEY
-  
-  const candidates: { val: string | undefined, src: string }[] = [];
-
-  // Source 1: Vite standard env
+  // 1. Try Vite standard (import.meta.env)
+  // We use try-catch to prevent crashes if import.meta is undefined in some environments
   try {
+    // @ts-ignore - Ignore TS warning if types aren't set up for Vite
+    if (import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) {
       // @ts-ignore
-      if (typeof import.meta !== 'undefined' && import.meta.env) {
-          // @ts-ignore
-          candidates.push({ val: import.meta.env.VITE_GEMINI_API_KEY, src: "VITE_GEMINI_API_KEY" });
-          // @ts-ignore
-          candidates.push({ val: import.meta.env.GEMINI_API_KEY, src: "GEMINI_API_KEY" });
-          // @ts-ignore
-          candidates.push({ val: import.meta.env.API_KEY, src: "API_KEY" });
-      }
-  } catch (e) {}
-
-  // Source 2: Process env (Node/Webpack/Some Vite configs)
-  try {
-      if (typeof process !== 'undefined' && process.env) {
-          candidates.push({ val: import.meta.env.VITE_GEMINI_API_KEY, src: "import.meta.env.VITE_GEMINI_API_KEY" });
-          candidates.push({ val: process.env.VITE_GEMINI_API_KEY, src: "process.env.VITE_GEMINI_API_KEY" });
-      }
-  } catch (e) {}
-
-  // Search for the first VALID candidate
-  for (const c of candidates) {
-      if (!c.val) continue;
-      
-      let key = c.val.trim();
-      
-      // Clean up common paste errors like 'KEY=AIza...'
-      if (key.includes('=')) {
-          const parts = key.split('=');
-          key = parts[parts.length - 1].trim();
-      }
-      // Clean quotes
-      if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
-          key = key.substring(1, key.length - 1);
-      }
-
-      // Check validation
-      if (isValidKey(key)) {
-          return { apiKey: key, source: c.src, status: 'valid' };
-      }
+      key = import.meta.env.VITE_GEMINI_API_KEY;
+    }
+  } catch (e) {
+    // console.debug("Vite env not available");
   }
 
-  // If we are here, we didn't find a valid key. 
-  // Return the first non-empty placeholder we found for debugging purposes.
-  const placeholder = candidates.find(c => c.val && c.val.length > 0);
-  if (placeholder) {
-      return { apiKey: placeholder.val, source: placeholder.src, status: 'invalid_placeholder' };
+  // 2. Try process.env (Webpack/Node/System fallback)
+  if (!key && typeof process !== 'undefined' && process.env) {
+    key = process.env.API_KEY || process.env.VITE_GEMINI_API_KEY || '';
   }
 
-  return { apiKey: undefined, source: "None", status: 'missing' };
+  return key ? key.trim() : '';
 };
 
 const getAiClient = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = getApiKey();
+  
+  if (!apiKey) {
+    throw new Error(
+      "[ERROR DE CONFIGURACIÓN] No se ha encontrado la API Key.\n\n" +
+      "SOLUCIÓN PARA RENDER:\n" +
+      "1. Ve a tu Dashboard en Render > Environment.\n" +
+      "2. Asegúrate de que la variable se llame: VITE_GEMINI_API_KEY\n" +
+      "3. Asegúrate de que el valor comience por 'AIza...'.\n" +
+      "4. IMPORTANTE: Haz un 'Manual Deploy' > 'Clear build cache & deploy' para aplicar los cambios."
+    );
+  }
+
+  return new GoogleGenAI({ apiKey });
 };
 
 export const generateStepImage = async (title: string, description: string): Promise<string | null> => {
@@ -103,7 +71,10 @@ export const generateStepImage = async (title: string, description: string): Pro
             console.warn("Image generation skipped: Quota exceeded.");
             return null;
         }
-        console.error("Image gen error", error);
+        // Don't log 400 errors if it's just image gen failing, keep UI clean
+        if (error.message?.includes('API key')) {
+             console.error("API Key Error in Image Gen:", error);
+        }
         return null;
     }
 };
@@ -134,6 +105,48 @@ export const generateStepInstructions = async (title: string, description: strin
 
     } catch (error) {
         console.error("Error generating instructions:", error);
+        return [];
+    }
+};
+
+export const getNearbyAttractions = async (location: string, language: Language): Promise<NearbyAttraction[]> => {
+    try {
+        const ai = getAiClient();
+        const langName = language === 'ca' ? 'Catalan' : language === 'es' ? 'Spanish' : 'English';
+        
+        const prompt = `Find 3 distinct interesting places (museums, landmarks, parks, or highly rated restaurants) strictly within 1000 meters walking distance of '${location}' in Amposta or the Ebro Delta. 
+        Do not include '${location}' itself. 
+        Language: ${langName}.
+        Return strictly a JSON array.`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                tools: [{ googleMaps: {} }],
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            name: { type: Type.STRING, description: "Name of the place" },
+                            type: { type: Type.STRING, description: "Category e.g. Restaurant, Park" },
+                            distance: { type: Type.STRING, description: "Distance e.g. 300m or 5 min walk" }
+                        },
+                        required: ["name", "type", "distance"]
+                    }
+                }
+            }
+        });
+
+        const jsonText = response.text;
+        if (jsonText) {
+            return JSON.parse(jsonText) as NearbyAttraction[];
+        }
+        return [];
+    } catch (error) {
+        console.error("Error fetching nearby attractions:", error);
         return [];
     }
 };

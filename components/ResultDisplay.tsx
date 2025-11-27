@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import { ItineraryResult, UserPreferences, Transport, ItineraryStep, Theme, GroundingSource } from '../types';
 import { TRANSLATIONS } from '../constants';
 import ItineraryStepCard from './ItineraryStepCard';
-import { generateStepImage, generateStepInstructions } from '../services/geminiService';
+import { generateStepImage, generateStepInstructions, getNearbyAttractions } from '../services/geminiService';
 
 interface ResultDisplayProps {
   result: ItineraryResult;
@@ -133,6 +133,16 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
       const instructions = await generateStepInstructions(step.title, step.description, preferences.language);
       if (instructions.length > 0) {
           setSteps(currentSteps => currentSteps.map(s => s.id === stepId ? { ...s, detailedInstructions: instructions } : s));
+      }
+  };
+
+  const handleFetchNearby = async (stepId: string) => {
+      const step = steps.find(s => s.id === stepId);
+      if (!step || step.nearbyAttractions) return;
+
+      const nearby = await getNearbyAttractions(step.title, preferences.language);
+      if (nearby) {
+          setSteps(currentSteps => currentSteps.map(s => s.id === stepId ? { ...s, nearbyAttractions: nearby } : s));
       }
   };
 
@@ -579,6 +589,7 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
                                     onGenerateImage={handleGenerateImage}
                                     onGenerateInstructions={handleGenerateInstructions}
                                     onViewBooking={() => setSelectedBookingStep(step)}
+                                    onFetchNearby={() => handleFetchNearby(step.id)}
                                     isSpecialEvent={isSpecialEvent(step)}
                                     hasDirectBooking={!!directBooking}
                                     userRating={ratings[step.title] || 0}
@@ -766,7 +777,7 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in-up flex flex-col max-h-[90vh]">
                <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
                   <h3 className="font-bold text-lg text-stone-800 flex items-center gap-2">
-                    <span className="text-xl">ℹ️</span> {selectedBookingStep.title}
+                    <span className="text-xl">🎟️</span> {t.results.view_booking_btn}: {selectedBookingStep.title}
                   </h3>
                   <button onClick={() => setSelectedBookingStep(null)} className="text-slate-400 hover:text-slate-600">
                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>

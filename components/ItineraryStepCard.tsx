@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { ItineraryStep, Transport, Theme, Language } from '../types';
+import { ItineraryStep, Transport, Theme, Language, NearbyAttraction } from '../types';
 import { THEME_ICONS, TRANSLATIONS } from '../constants';
 
 interface ItineraryStepCardProps {
@@ -17,6 +17,7 @@ interface ItineraryStepCardProps {
   onGenerateImage?: (stepId: string) => Promise<void>;
   onGenerateInstructions?: (stepId: string) => Promise<void>;
   onViewBooking: () => void;
+  onFetchNearby?: () => void;
   isSpecialEvent?: boolean;
   hasDirectBooking?: boolean;
   userRating?: number;
@@ -74,6 +75,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
   onGenerateImage,
   onGenerateInstructions,
   onViewBooking,
+  onFetchNearby,
   isSpecialEvent,
   hasDirectBooking,
   userRating,
@@ -85,6 +87,9 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingInstructions, setIsGeneratingInstructions] = useState(false);
   const [areInstructionsOpen, setAreInstructionsOpen] = useState(false);
+  const [areNearbyOpen, setAreNearbyOpen] = useState(false);
+  const [isLoadingNearby, setIsLoadingNearby] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const t = TRANSLATIONS[language];
 
@@ -92,6 +97,12 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
   useEffect(() => {
       setImgError(false);
   }, [step.imageUrl]);
+
+  // Reset loading states when step data updates
+  useEffect(() => {
+      if (step.detailedInstructions) setIsGeneratingInstructions(false);
+      if (step.nearbyAttractions) setIsLoadingNearby(false);
+  }, [step.detailedInstructions, step.nearbyAttractions]);
 
   const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(`${step.title} Amposta hours and prices`)}`;
 
@@ -122,12 +133,11 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
   const placeholderIcon = THEME_ICONS[effectiveTheme] || '🗺️';
   
   // Heuristic for "Bookable" steps
-  // We rely on keywords to identify steps that likely need a ticket or reservation.
   const isBookable = (() => {
     const title = step.title.toLowerCase();
     const desc = step.description.toLowerCase();
 
-    // Explicit exclusions for generic steps
+    // Explicit exclusions
     if (title.includes('check-in') || title.includes('check-out') || title.includes('esmorzar') || title.includes('desayuno') || title.includes('breakfast')) return false;
 
     // Strong positive signals for attractions, restaurants, and accommodations
@@ -187,6 +197,30 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
       setIsGeneratingInstructions(false);
   };
 
+  const handleNearbyClick = () => {
+      if (step.nearbyAttractions && step.nearbyAttractions.length > 0) {
+          setAreNearbyOpen(!areNearbyOpen);
+          return;
+      }
+
+      if (!onFetchNearby || isLoadingNearby) return;
+
+      setIsLoadingNearby(true);
+      setAreNearbyOpen(true);
+      onFetchNearby();
+  };
+
+  const handleCopy = async () => {
+    const text = `${step.title}\n\n${step.description}`;
+    try {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    } catch (e) {
+        console.error("Copy failed", e);
+    }
+  };
+
   const containerClasses = isSpecialEvent 
     ? "bg-white rounded-xl border-2 border-fuchsia-400 ring-4 ring-fuchsia-50 shadow-lg shadow-fuchsia-100/50 hover:shadow-xl transition-all duration-200 overflow-hidden flex flex-col md:flex-row group h-full md:min-h-[320px] relative z-10"
     : "bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col md:flex-row group h-full md:min-h-[320px]";
@@ -220,7 +254,6 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                       className="w-full h-full object-cover"
                       onError={() => {
                         setImgError(true);
-                        // Auto retry with AI generation if original link fails
                         if (onGenerateImage && step.imageUrl && !step.imageUrl.startsWith('data:')) {
                             onGenerateImage(step.id);
                         }
@@ -234,7 +267,6 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                   onClick={!isGenerating && onGenerateImage ? handleGenerateClick : undefined}
                   className={`w-full h-full flex flex-col items-center justify-center relative overflow-hidden p-8 group/placeholder transition-colors ${onGenerateImage ? 'cursor-pointer hover:bg-slate-50' : ''}`}
                 >
-                   {/* Decorative background shapes */}
                    <div className="absolute top-[-10%] right-[-10%] w-32 h-32 bg-white/40 rounded-full blur-2xl"></div>
                    <div className="absolute bottom-[-10%] left-[-10%] w-32 h-32 bg-black/5 rounded-full blur-2xl"></div>
                    
@@ -242,7 +274,6 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                      {placeholderIcon}
                    </span>
 
-                   {/* AI Image Gen Button Overlay */}
                    {onGenerateImage && (
                        <div className="absolute inset-0 flex items-center justify-center bg-white/30 backdrop-blur-[2px] opacity-0 group-hover/placeholder:opacity-100 transition-all duration-300 z-20">
                            <button 
@@ -338,6 +369,38 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                     )}
                 </div>
             )}
+
+            {/* Nearby Attractions Section */}
+            {areNearbyOpen && (
+                <div className="mt-4 p-4 bg-indigo-50 border border-indigo-100 rounded-lg animate-fade-in text-sm text-stone-700">
+                    <h4 className="font-bold text-indigo-800 mb-2 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        {t.results.nearby_title}
+                    </h4>
+                    {isLoadingNearby ? (
+                        <div className="flex items-center gap-2 text-indigo-600 italic">
+                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            {t.results.loading_nearby}
+                        </div>
+                    ) : (
+                        step.nearbyAttractions && step.nearbyAttractions.length > 0 ? (
+                            <ul className="space-y-2">
+                                {step.nearbyAttractions.map((attraction, i) => (
+                                    <li key={i} className="flex flex-col bg-white p-2 rounded border border-indigo-100">
+                                        <span className="font-semibold text-indigo-900">{attraction.name}</span>
+                                        <div className="flex justify-between text-xs text-indigo-600 mt-1">
+                                            <span>{attraction.type}</span>
+                                            <span>📍 {attraction.distance}</span>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="italic text-indigo-600">{t.results.no_nearby_found}</p>
+                        )
+                    )}
+                </div>
+            )}
             
             {/* Display user notes if present */}
             {step.userNotes && (
@@ -396,9 +459,9 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
               {showBookingBtn && (
                 <button 
                   onClick={onViewBooking}
-                  className={`group/btn flex items-center gap-2 text-xs font-medium transition-colors px-3 py-2 rounded-lg border ${
+                  className={`group/btn flex items-center gap-2 text-xs font-medium transition-all px-3 py-2 rounded-lg border ${
                      hasDirectBooking 
-                     ? "bg-amber-100 hover:bg-amber-200 border-amber-200 text-amber-900 shadow-sm" 
+                     ? "bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white border-transparent shadow-md transform hover:scale-105" 
                      : "bg-teal-50 hover:bg-teal-100 border-teal-100 hover:border-teal-200 text-teal-700"
                   }`}
                 >
@@ -426,6 +489,38 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                     {t.results.step_by_step_btn}
                   </button>
               )}
+
+              {onFetchNearby && (
+                  <button
+                    onClick={handleNearbyClick}
+                    className={`group/btn flex items-center gap-2 text-xs font-medium transition-colors px-3 py-2 rounded-lg border ${
+                        areNearbyOpen
+                        ? "bg-indigo-50 border-indigo-200 text-indigo-800"
+                        : "bg-slate-50 hover:bg-indigo-50 border-transparent hover:border-indigo-100 text-slate-500 hover:text-indigo-600"
+                    }`}
+                  >
+                    <svg className={`w-4 h-4 transition-colors ${areNearbyOpen ? 'text-indigo-600' : 'text-slate-400 group-hover/btn:text-indigo-500'}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    {t.results.nearby_attractions_btn}
+                  </button>
+              )}
+
+              <button 
+                onClick={handleCopy}
+                className="group/btn flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-teal-600 transition-colors bg-slate-50 hover:bg-teal-50 px-3 py-2 rounded-lg border border-transparent hover:border-teal-100"
+                title={t.results.copy_step}
+              >
+                 {copied ? (
+                    <>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-teal-600"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <span className="text-teal-600">{t.results.copied}</span>
+                    </>
+                 ) : (
+                    <>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        {t.results.copy_step}
+                    </>
+                 )}
+              </button>
 
               <button 
                 onClick={openNoteModal}
