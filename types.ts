@@ -72,6 +72,13 @@ export interface NearbyAttraction {
   distance: string;
 }
 
+export interface Restaurant {
+  name: string;
+  cuisine: string;
+  rating: string;
+  address: string;
+}
+
 export interface SavedItinerary {
   id: string;
   name: string;

@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { UserPreferences, ItineraryResult, GroundingSource, ItineraryStep, Theme, Transport, Language, NearbyAttraction, AccommodationMode } from "../types";
+import { UserPreferences, ItineraryResult, GroundingSource, ItineraryStep, Theme, Transport, Language, NearbyAttraction, AccommodationMode, Restaurant } from "../types";
 import { TRANSLATIONS } from "../constants";
 
 const getAiClient = () => {
@@ -155,8 +155,6 @@ export const getNearbyAttractions = async (location: string, language: Language)
             const ai = getAiClient();
             const langName = language === 'ca' ? 'Catalan' : language === 'es' ? 'Spanish' : 'English';
             
-            // Note: Removed googleMaps tool because it cannot be combined with responseSchema.
-            // Using the model's knowledge which is sufficient for major POIs in these towns.
             const prompt = `You are a local expert guide for Terres de l'Ebre (South Catalonia).
             Identify exactly 3 distinct, real, and interesting points of interest (museums, landmarks, historical sites, or top-rated restaurants) strictly within a 1km (10-15 min walk) radius of: "${location}".
             
@@ -195,6 +193,52 @@ export const getNearbyAttractions = async (location: string, language: Language)
         } catch (error) {
             console.error("Error fetching nearby attractions:", error);
             throw error;
+        }
+    });
+};
+
+export const getRestaurantsByCoordinates = async (lat: number, lng: number, language: Language): Promise<Restaurant[]> => {
+    return retryOperation(async () => {
+        try {
+            const ai = getAiClient();
+            const langName = language === 'ca' ? 'Catalan' : language === 'es' ? 'Spanish' : 'English';
+            
+            const prompt = `I am at coordinates ${lat}, ${lng} in Terres de l'Ebre, Spain.
+            Recommend 4 high-quality restaurants or places to eat very close to me right now.
+            Return a JSON array.
+            Language: ${langName}.`;
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+                config: {
+                    tools: [{ googleMaps: {} }], // Use Google Maps to find real places
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                name: { type: Type.STRING },
+                                cuisine: { type: Type.STRING },
+                                rating: { type: Type.STRING, description: "e.g. 4.5/5" },
+                                address: { type: Type.STRING }
+                            },
+                            required: ["name", "cuisine", "rating", "address"]
+                        }
+                    }
+                }
+            });
+            
+            const jsonText = response.text;
+            if (jsonText) {
+                return JSON.parse(jsonText) as Restaurant[];
+            }
+            return [];
+
+        } catch (error) {
+            console.error("Error fetching restaurants:", error);
+            return [];
         }
     });
 };
@@ -298,12 +342,13 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
       if (prefs.selectedPOIs && prefs.selectedPOIs.length > 0) {
           const poiList = prefs.selectedPOIs.join(", ");
           selectedPoisInstruction = `
-          INSTRUCCIÓN DE PRIORIDAD MÁXIMA (PARADAS OBLIGATORIAS):
-          El usuario ha marcado que QUIERE visitar: [${poiList}].
+          INSTRUCCIÓN DE PRIORIDAD MÁXIMA (MODO ESTRICTO DE SELECCIÓN):
+          El usuario ha seleccionado ESPECÍFICAMENTE estos lugares y SOLO quiere ver estos: [${poiList}].
           
-          1. ESTRUCTURA EL ITINERARIO ALREDEDOR DE ESTOS PUEBLOS/LUGARES.
-          2. Si ha elegido lugares en pueblos diferentes (ej. Amposta y Miravet), dedica un día (o medio) a cada zona y explica cómo ir de uno a otro.
-          3. Incluye TODOS los seleccionados.
+          REGLA DE ORO "SIN RELLENO":
+          1. NO AÑADAS museos, iglesias o lugares históricos que NO estén en la lista, a menos que sean estrictamente necesarios para la logística (ej. un lugar para comer cerca).
+          2. Si visitar los lugares seleccionados lleva menos tiempo del día completo, NO inventes actividades. Simplemente indica "Tiempo libre para pasear por el centro o regreso al alojamiento para descansar".
+          3. ESTRUCTURA EL ITINERARIO ALREDEDOR DE ESTOS PUEBLOS/LUGARES SELECCIONADOS SOLAMENTE.
           `;
       }
 
@@ -318,10 +363,15 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
         - ${transportInstruction}
         - ${accommodationInstruction}
         ${selectedPoisInstruction}
-        ${prefs.additionalInfo ? `- Notas usuario: ${prefs.additionalInfo}` : ''}
+        ${prefs.additionalInfo ? `- Notas/Horarios usuario: "${prefs.additionalInfo}"` : ''}
 
-        REQUISITOS:
-        1. Alcance: ${locationScope}. No te limites solo a Amposta si el usuario pide ver Tortosa o Miravet.
+        REGLAS DE HORARIOS DE LLEGADA/SALIDA (CRÍTICO):
+        Analiza las Notas del Usuario buscando palabras clave como "llegamos a las...", "llegada", "salimos", "vuelta", "vuelo", "tren".
+        1. Si el usuario dice "Llegamos el primer día a las 14:00", el Día 1 NO puede tener actividades por la mañana. Empieza directamente con "Llegada y check-in" seguido de la comida.
+        2. Si el usuario dice "Nos vamos el último día a las 11:00", el último día NO puede tener actividades largas. Solo desayuno y salida.
+        
+        REQUISITOS GENERALES:
+        1. Alcance: ${locationScope}.
         2. IMPORTANTE: Ten muy en cuenta los días de la semana calculados para evitar recomendar museos cerrados.
         3. Logística: Se realista con los tiempos de desplazamiento entre pueblos.
         
