@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ItineraryStep, Transport, Theme, Language, NearbyAttraction } from '../types';
@@ -308,9 +309,10 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                 {step.title}
               </h3>
               {isSpecialEvent && (
-                <span className="shrink-0 inline-flex items-center gap-1 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm animate-pulse">
-                  <span>🎉</span> {t.results.special_event}
-                </span>
+                <div className="shrink-0 inline-flex items-center gap-1.5 bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-200 text-xs font-bold px-3 py-1.5 rounded-md shadow-sm">
+                  <span>📅</span>
+                  <span className="uppercase tracking-wide">{t.results.special_event}</span>
+                </div>
               )}
             </div>
 
@@ -387,11 +389,25 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                         step.nearbyAttractions && step.nearbyAttractions.length > 0 ? (
                             <ul className="space-y-2">
                                 {step.nearbyAttractions.map((attraction, i) => (
-                                    <li key={i} className="flex flex-col bg-white p-2 rounded border border-indigo-100">
-                                        <span className="font-semibold text-indigo-900">{attraction.name}</span>
+                                    <li key={i} className="flex flex-col bg-white p-2 rounded border border-indigo-100 hover:border-indigo-300 transition-colors">
+                                        <div className="flex justify-between items-start gap-2">
+                                            <span className="font-semibold text-indigo-900">{attraction.name}</span>
+                                            <a 
+                                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(attraction.name + " near " + step.title)}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-indigo-400 hover:text-indigo-700 shrink-0"
+                                                title="View on Google Maps"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
+                                            </a>
+                                        </div>
                                         <div className="flex justify-between text-xs text-indigo-600 mt-1">
-                                            <span>{attraction.type}</span>
-                                            <span>📍 {attraction.distance}</span>
+                                            <span className="bg-indigo-50 px-1.5 py-0.5 rounded">{attraction.type}</span>
+                                            <span className="flex items-center gap-1">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                                {attraction.distance}
+                                            </span>
                                         </div>
                                     </li>
                                 ))}

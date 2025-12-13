@@ -1,40 +1,12 @@
 
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserPreferences, ItineraryResult, GroundingSource, ItineraryStep, Theme, Transport, Language, NearbyAttraction } from "../types";
 import { TRANSLATIONS } from "../constants";
 
-// Robust API Key retrieval function
-const getApiKey = (): string => {
-  // @ts-ignore
-  if (import.meta.env.VITE_GEMINI_API_KEY) {
-    // @ts-ignore
-    return import.meta.env.VITE_GEMINI_API_KEY;
-  }
-  return '';
-};
-
 const getAiClient = () => {
-  const apiKey = getApiKey();
-  
-  if (!apiKey) {
-    // Check specific environment variables detected for debugging
-    const envVars = [];
-    // @ts-ignore
-    if (import.meta.env.VITE_GEMINI_API_KEY) envVars.push('VITE_GEMINI_API_KEY');
-    
-    throw new Error(
-      `[ERROR v6.1 - CLAVE NO DETECTADA]\n\n` +
-      `La app no encuentra la clave API 'VITE_GEMINI_API_KEY'.\n` +
-      `Variables detectadas: ${envVars.length > 0 ? envVars.join(', ') : 'NINGUNA'}\n\n` +
-      `PASOS PARA SOLUCIONAR EN RENDER:\n` +
-      `1. Ve a "Environment Variables".\n` +
-      `2. Asegúrate de que la clave se llama EXACTAMENTE: VITE_GEMINI_API_KEY\n` +
-      `3. Asegúrate de que el valor empieza por: AIza...\n` +
-      `4. IMPORTANTE: Pulsa "Manual Deploy" > "Clear build cache & deploy" para forzar que Vite lea la variable nueva.`
-    );
-  }
-
-  return new GoogleGenAI({ apiKey });
+  // @ts-ignore
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 // Helper function to retry operations on 503 (Overloaded) errors
@@ -69,7 +41,7 @@ export const generateStepImage = async (title: string, description: string): Pro
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash-image',
             contents: {
-                parts: [{ text: `Generate a high quality, photorealistic travel photography image of: ${title} in Amposta, Spain. The image should be bright, inviting, and suitable for a tourist guide. Context: ${description.slice(0, 200)}.` }]
+                parts: [{ text: `Generate a high quality, photorealistic travel photography image of: ${title} in Terres de l'Ebre / Amposta / Tortosa / Miravet, Spain. The image should be bright, inviting, and suitable for a tourist guide. Context: ${description.slice(0, 200)}.` }]
             },
             config: {
                 imageConfig: {
@@ -94,12 +66,9 @@ export const generateStepImage = async (title: string, description: string): Pro
     }
 
     // 2. Fallback Strategy: Use Pollinations.ai (Free, No Auth) to ensure an image always appears
-    // This prevents the "icons only" issue in production when quotas are hit.
     try {
         console.log(`Using fallback image generator for: ${title}`);
-        // Create a descriptive prompt for the fallback generator
-        const prompt = encodeURIComponent(`${title} landmark in Amposta Ebro Delta Spain sunny bright photorealistic tourism`);
-        // Add a random seed to prevent caching issues if multiple steps have similar titles
+        const prompt = encodeURIComponent(`${title} landmark in Ebro Delta Spain sunny bright photorealistic tourism`);
         const seed = Math.floor(Math.random() * 1000);
         return `https://pollinations.ai/p/${prompt}?width=800&height=600&nologo=true&seed=${seed}&model=flux`;
     } catch (e) {
@@ -115,7 +84,7 @@ export const generateStepInstructions = async (title: string, description: strin
             const langName = language === 'ca' ? 'Catalan' : language === 'es' ? 'Spanish' : 'English';
             const prompt = `Provide a concise, ordered list of 3-6 step-by-step instructions for a tourist to experience: "${title}". 
             Context: "${description}". 
-            Location: Amposta/Delta de l'Ebre. 
+            Location: Terres de l'Ebre (Amposta, Tortosa, Delta). 
             Language: ${langName}. 
             Format: Return ONLY the list items, one per line, starting with "- ". Do not include numbering or titles.`;
 
@@ -146,25 +115,31 @@ export const getNearbyAttractions = async (location: string, language: Language)
             const ai = getAiClient();
             const langName = language === 'ca' ? 'Catalan' : language === 'es' ? 'Spanish' : 'English';
             
-            const prompt = `Find 3 distinct interesting places (museums, landmarks, parks, or highly rated restaurants) strictly within 1000 meters walking distance of '${location}' in Amposta or the Ebro Delta. 
-            Do not include '${location}' itself. 
-            Language: ${langName}.
-            Return strictly a JSON array.`;
+            // Note: Removed googleMaps tool because it cannot be combined with responseSchema.
+            // Using the model's knowledge which is sufficient for major POIs in these towns.
+            const prompt = `You are a local expert guide for Terres de l'Ebre (South Catalonia).
+            Identify exactly 3 distinct, real, and interesting points of interest (museums, landmarks, historical sites, or top-rated restaurants) strictly within a 1km (10-15 min walk) radius of: "${location}".
+            
+            Rules:
+            1. The places MUST be real and currently existing in Amposta, Tortosa, Miravet, or the Ebro Delta.
+            2. Do NOT include "${location}" itself.
+            3. Provide the name, a short category type (e.g. "Museum", "Tapas Bar"), and estimated walking distance/time.
+            4. Language: ${langName}.
+            `;
 
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
                 contents: prompt,
                 config: {
-                    tools: [{ googleMaps: {} }],
                     responseMimeType: "application/json",
                     responseSchema: {
                         type: Type.ARRAY,
                         items: {
                             type: Type.OBJECT,
                             properties: {
-                                name: { type: Type.STRING, description: "Name of the place" },
-                                type: { type: Type.STRING, description: "Category e.g. Restaurant, Park" },
-                                distance: { type: Type.STRING, description: "Distance e.g. 300m or 5 min walk" }
+                                name: { type: Type.STRING },
+                                type: { type: Type.STRING },
+                                distance: { type: Type.STRING }
                             },
                             required: ["name", "type", "distance"]
                         }
@@ -196,7 +171,7 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
             const subThemeLabels = prefs.customThemes.map(th => t.themes[th].label).join(", ");
             themeLabel = `ITINERARIO PERSONALIZADO (MIX) que combine elementos de: ${subThemeLabels}. Organiza la ruta mezclando estos temas de forma lógica.`;
         } else {
-            themeLabel = "Mix General: Lo mejor de Amposta (Historia, Naturaleza y Gastronomía).";
+            themeLabel = "Mix General: Lo mejor de Terres de l'Ebre (Historia, Naturaleza y Gastronomía).";
         }
       }
 
@@ -204,65 +179,92 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
       const transportLabel = t.transports[prefs.transport];
 
       let transportInstruction = "";
-      let locationScope = "El itinerario debe centrarse en la ciudad de Amposta y el Delta del Ebro.";
+      let locationScope = "El itinerario debe centrarse en la ciudad de Amposta, Tortosa, Miravet y el Delta del Ebro.";
       let langInstruction = `RESPOND IN ${prefs.language === 'ca' ? 'CATALAN' : prefs.language === 'es' ? 'SPANISH' : 'ENGLISH'}.`;
 
+      // LOGISTICA DE TRANSPORTE REGIONAL
       if (prefs.transport === Transport.RIVER) {
-        if (prefs.includeUpriver) {
-            transportInstruction = "El usuario desea una experiencia fluvial COMPLETA remontando el río Ebro. OBLIGATORIO: Dedica al menos medio día o un día entero a visitar TORTOSA (Catedral, Castillo de la Suda) o MIRAVET (Castillo Templario, Paso de Barca) llegando en barco o combinando barco/bus si es necesario. IMPRESCINDIBLE: Incluye horarios de salida de barcos desde Amposta, precios aproximados, dirección del embarcadero en Amposta y en destino.";
-            locationScope = "El itinerario debe incluir Amposta y expandirse obligatoriamente río arriba hacia Tortosa o Miravet.";
-        } else {
-            transportInstruction = "El usuario está interesado en transporte fluvial por el Delta. INCLUYE OBLIGATORIAMENTE opciones de cruceros por la desembocadura. IMPRESCINDIBLE: En la descripción de la actividad fluvial, incluye la DIRECCIÓN EXACTA del embarcadero o punto de salida en Amposta.";
-        }
-      } else if (prefs.transport === Transport.BUS) {
-        transportInstruction = "El usuario viaja en Autobús. IMPRESCINDIBLE: Indica claramente la dirección de la Estación de Autobuses de Amposta o las paradas específicas (ubicación de la parada) para llegar a los puntos de interés sugeridos.";
-      } else if (prefs.transport === Transport.TRAIN) {
-        transportInstruction = "El usuario viaja en TREN. IMPRESCINDIBLE: Ten en cuenta que la estación es 'L'Aldea-Amposta-Tortosa' (a unos km del centro). Incluye información sobre cómo llegar del tren al centro (Bus/Taxi) y coordina los tiempos.";
-      } else if (prefs.transport === Transport.BIKE) {
-        transportInstruction = "El usuario se mueve en BICICLETA. Prioriza rutas por carriles bici, caminos rurales del Delta (Caminos de Sirga) y la Vía Verde. Sugiere lugares donde aparcar la bici si es necesario.";
+         transportInstruction = "Transporte Fluvial: Incluye rutas en barco (Miravet, Delta). Para conectar entre pueblos (Amposta-Tortosa), sugiere Barco si existe línea regular, o Bus/Taxi como alternativa para llegar al embarcadero.";
       } else if (prefs.transport === Transport.MIX) {
-        if (prefs.customTransports && prefs.customTransports.length > 0) {
-            const mixLabels = prefs.customTransports.map(tr => t.transports[tr]).join(", ");
-            transportInstruction = `El usuario utilizará una COMBINACIÓN de transportes personalizada: ${mixLabels}. Para cada desplazamiento del itinerario, especifica explícitamente cuál de estos medios es el más lógico y eficiente (ej. "Ir a pie al castillo", "Tomar el coche para ir al Delta").`;
-        } else {
-            transportInstruction = "El usuario utilizará una combinación óptima de transporte (A pie por el centro, coche o taxi para distancias largas). Sugiere la mejor opción logística para cada tramo.";
-        }
+         if (prefs.customTransports && prefs.customTransports.length > 0) {
+             const mixLabels = prefs.customTransports.map(tr => t.transports[tr]).join(", ");
+             transportInstruction = `
+             LOGÍSTICA DE TRANSPORTE MIXTO:
+             El usuario usará estos medios: ${mixLabels}.
+             REGLAS CRÍTICAS DE MOVILIDAD ENTRE PUEBLOS:
+             1. Si hay que ir de Amposta a Tortosa o l'Aldea: Sugiere BUS (Hife) o TREN (Renfe l'Aldea). No se puede ir andando.
+             2. Si hay que ir a Miravet: Sugiere Coche o combinación Tren+Taxi (Móra la Nova).
+             3. DENTRO de los cascos urbanos (Tortosa/Amposta): Sugiere ir "A PIE".
+             4. Delta: Sugiere "BICICLETA" o Coche/Bus.
+             `;
+         } else {
+             transportInstruction = "Uso combinado de transporte. Sugiere Tren/Bus para moverte entre Amposta y Tortosa, y A PIE dentro de las ciudades.";
+         }
+      } else if (prefs.transport === Transport.WALKING) {
+         transportInstruction = "A PIE: El usuario quiere caminar mucho, pero SI el itinerario cambia de pueblo (ej. Amposta a Tortosa), DEBES sugerir tomar el BUS/TREN para el enlace interurbano, y luego caminar en destino.";
       } else {
-        transportInstruction = `Transporte disponible: ${transportLabel}`;
+         transportInstruction = `Transporte disponible: ${transportLabel}`;
       }
 
-      let dateContext = "Fecha no especificada. Asume horarios de apertura estándar (primavera/verano).";
+      let dateContext = "Fecha no especificada. Asume horarios de apertura estándar.";
       
       if (prefs.startDate) {
-          const date = new Date(prefs.startDate);
-          const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-          const dayName = days[date.getDay()];
+          const startDate = new Date(prefs.startDate);
+          const daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
           
+          let scheduleTable = "";
+          for (let i = 0; i < prefs.duration; i++) {
+              const currentDate = new Date(startDate);
+              currentDate.setDate(startDate.getDate() + i);
+              const dayName = daysOfWeek[currentDate.getDay()];
+              const dateStr = currentDate.toLocaleDateString();
+              scheduleTable += `- Día ${i+1}: ${dateStr} es ${dayName}\n`;
+          }
+
           dateContext = `
-          FECHA EXACTA DE INICIO: ${prefs.startDate} (${dayName}).
+          FECHA EXACTA DE INICIO: ${prefs.startDate}.
           
-          LOGÍSTICA TEMPORAL CRÍTICA (OBLIGATORIO):
-          1. CALENDARIO REAL: Calcula qué día de la semana cae cada día del itinerario.
-          2. CIERRES DE LUNES: Ten en cuenta que el "Museu de les Terres de l'Ebre" y muchos monumentos cierran los LUNES. Si el itinerario incluye un Lunes, programa actividades de naturaleza o exteriores ese día, no museos.
-          3. EVENTOS LOCALES: Verifica si la fecha coincide con la "Festa del Mercat a la Plaça" (Mayo), "Festes Majors" (Agosto), "Fira de Mostres" (Diciembre) o jornadas gastronómicas (Carxofa, Arròs). Si coincide, INCLÚYELO como actividad prioritaria.
+          CALENDARIO REAL DE VIAJE:
+          ${scheduleTable}
+
+          ⚠️ REGLAS CRÍTICAS DE HORARIOS (SEGÚN EL DÍA DE LA SEMANA):
+          1. SI UN DÍA CAE EN LUNES: La mayoría de museos (Catedral Tortosa, Castell Miravet, Museus Amposta) ESTÁN CERRADOS. Programa actividades de exterior (Delta, Murallas, Paseos) ese día.
+          2. SI UN DÍA ES DOMINGO TARDE: Muchos sitios cierran a las 14:00 o 15:00.
+          3. COMPRUEBA SI ES FESTIVO: Si coincide con festivos nacionales, avisa de posibles cierres especiales.
+          4. COMIDAS: En pueblos pequeños (Miravet/Terra Alta), avisar que hay que reservar mesa si es fin de semana.
+          `;
+      }
+
+      // Logic for user-selected specific Places of Interest (POIs)
+      let selectedPoisInstruction = "";
+      if (prefs.selectedPOIs && prefs.selectedPOIs.length > 0) {
+          const poiList = prefs.selectedPOIs.join(", ");
+          selectedPoisInstruction = `
+          INSTRUCCIÓN DE PRIORIDAD MÁXIMA (PARADAS OBLIGATORIAS):
+          El usuario ha marcado que QUIERE visitar: [${poiList}].
+          
+          1. ESTRUCTURA EL ITINERARIO ALREDEDOR DE ESTOS PUEBLOS/LUGARES.
+          2. Si ha elegido lugares en pueblos diferentes (ej. Amposta y Miravet), dedica un día (o medio) a cada zona y explica cómo ir de uno a otro.
+          3. Incluye TODOS los seleccionados.
           `;
       }
 
       const prompt = `
-        Actúa como un guía turístico experto local de Amposta y Terres de l'Ebre (Tarragona, España).
+        Actúa como un guía turístico experto de las "Terres de l'Ebre" (Sur de Cataluña).
         Crea un itinerario detallado basado en las siguientes preferencias:
         
-        - Idioma de respuesta: ${langInstruction}
-        - Tema Principal: ${themeLabel}
+        - Idioma: ${langInstruction}
+        - Tema: ${themeLabel}
         - Duración: ${durationLabel}
         - ${dateContext}
         - ${transportInstruction}
-        ${prefs.additionalInfo ? `- Notas adicionales del usuario: ${prefs.additionalInfo}` : ''}
+        ${selectedPoisInstruction}
+        ${prefs.additionalInfo ? `- Notas usuario: ${prefs.additionalInfo}` : ''}
 
-        REQUISITOS IMPORTANTES:
-        1. Alcance Geográfico: ${locationScope}
-        2. Usa nombres oficiales para lugares.
-        3. Sugiere horarios y precios aproximados.
+        REQUISITOS:
+        1. Alcance: ${locationScope}. No te limites solo a Amposta si el usuario pide ver Tortosa o Miravet.
+        2. IMPORTANTE: Ten muy en cuenta los días de la semana calculados para evitar recomendar museos cerrados.
+        3. Logística: Se realista con los tiempos de desplazamiento entre pueblos.
         
         FORMATO DE RESPUESTA OBLIGATORIO:
         Usa EXACTAMENTE este formato para cada paso:
@@ -272,7 +274,7 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
         TIME: [Momento del día]
         TITLE: [Nombre corto de la actividad]
         IMAGE: [Dejar vacío]
-        DESCRIPTION: [Descripción detallada]
+        DESCRIPTION: [Descripción detallada. Si es un desplazamiento entre pueblos, indica el medio de transporte recomendado.]
         <<<END_STEP>>>
       `;
 
@@ -289,8 +291,8 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
             toolConfig: {
               retrievalConfig: {
                 latLng: {
-                  latitude: 40.7130, // Amposta Latitude
-                  longitude: 0.5805 // Amposta Longitude
+                  latitude: 40.8125, // Tortosa Latitude (More central for region)
+                  longitude: 0.5216 // Tortosa Longitude
                 }
               }
             },

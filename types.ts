@@ -25,6 +25,7 @@ export interface UserPreferences {
   language: Language;
   theme: Theme;
   customThemes?: Theme[];
+  selectedPOIs?: string[]; // New field for specific places
   duration: number;
   transport: Transport;
   customTransports?: Transport[];
@@ -48,6 +49,7 @@ export interface ItineraryStep {
   imageUrl?: string;
   userNotes?: string;
   detailedInstructions?: string[];
+  nearbyAttractions?: NearbyAttraction[];
 }
 
 export interface ItineraryResult {

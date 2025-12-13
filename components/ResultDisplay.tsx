@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ItineraryResult, UserPreferences, Transport, ItineraryStep, Theme, GroundingSource } from '../types';
@@ -146,6 +147,22 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
       }
   };
 
+  // Heuristic to detect if a step is a main attraction vs logistics
+  const isLikelyAttraction = (step: ItineraryStep) => {
+     const lowerTitle = step.title.toLowerCase();
+     
+     // Exclude logistics
+     if (lowerTitle.includes('check-in') || lowerTitle.includes('check-out') || lowerTitle.includes('arribada') || lowerTitle.includes('sortida') || lowerTitle.includes('llegada') || lowerTitle.includes('salida')) return false;
+     
+     // Exclude generic "Breakfast" unless it looks like a specific place
+     if ((lowerTitle.includes('esmorzar') || lowerTitle.includes('desayuno') || lowerTitle.includes('breakfast')) && lowerTitle.length < 30) return false;
+     
+     // Exclude pure travel steps if detected
+     if (lowerTitle.startsWith('travel to') || lowerTitle.startsWith('viaje a') || lowerTitle.startsWith('anar a') || lowerTitle.startsWith('trayecto') || lowerTitle.startsWith('trajecte')) return false;
+     
+     return true;
+  };
+
   // Auto-trigger image generation for missing images SEQUENTIALLY to avoid 429 Rate Limits
   useEffect(() => {
     const generateImagesSequentially = async () => {
@@ -170,18 +187,22 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
   const isSpecialEvent = (step: ItineraryStep) => {
      const title = step.title.toLowerCase();
      const desc = step.description.toLowerCase();
+     // Enhanced list for Terres de l'Ebre special events
      const eventKeywords = [
         "festa", "festes", "fira", "festival", 
-        "jornada gas", "jornadas gas", // Jornades gastronòmiques
+        "jornada gas", "jornadas gas", "jornades",
         "diada", "concurs", "marató", "cursa",
         "mercado", "feria", "fiesta", // Spanish
         "nit de", "noche de",
         "cavalcada", "cabalgata", "processó", "procesión", "desfilada", "desfile", // Parades
         "concert", "concierto", "espectacle", "espectáculo",
-        "aplec", "trobada", "vetllada"
+        "aplec", "trobada", "vetllada",
+        "plantada", "sega", "mudefer", "renaixement", // Specific Ebre events
+        "bou", "bous", "correbous", // Traditional
+        "mercat a la plaça"
      ];
-     // Check title primarily, or strong signal in description
-     return eventKeywords.some(k => title.includes(k));
+     
+     return eventKeywords.some(k => title.includes(k) || desc.includes(k));
   };
 
   const getShareUrl = () => {
@@ -559,7 +580,7 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
                               onGenerateImage={handleGenerateImage}
                               onGenerateInstructions={handleGenerateInstructions}
                               onViewBooking={() => setSelectedBookingStep(step)}
-                              onFetchNearby={() => handleFetchNearby(step.id)}
+                              onFetchNearby={isLikelyAttraction(step) ? () => handleFetchNearby(step.id) : undefined}
                               isSpecialEvent={isSpecialEvent(step)}
                               hasDirectBooking={!!directBooking}
                               userRating={ratings[step.title] || 0}
@@ -590,7 +611,7 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
                                     onGenerateImage={handleGenerateImage}
                                     onGenerateInstructions={handleGenerateInstructions}
                                     onViewBooking={() => setSelectedBookingStep(step)}
-                                    onFetchNearby={() => handleFetchNearby(step.id)}
+                                    onFetchNearby={isLikelyAttraction(step) ? () => handleFetchNearby(step.id) : undefined}
                                     isSpecialEvent={isSpecialEvent(step)}
                                     hasDirectBooking={!!directBooking}
                                     userRating={ratings[step.title] || 0}

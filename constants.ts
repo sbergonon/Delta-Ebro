@@ -1,4 +1,5 @@
 
+
 import { Theme, Transport, Language } from './types';
 
 export const THEME_ICONS: Record<Theme, string> = {
@@ -24,11 +25,111 @@ export const DEFAULT_PREFERENCES = {
   language: 'ca' as Language,
   theme: Theme.HISTORICAL,
   customThemes: [] as Theme[],
+  selectedPOIs: [] as string[],
   duration: 1,
   transport: Transport.WALKING,
   customTransports: [] as Transport[],
   startDate: '',
   includeUpriver: false
+};
+
+// Map each POI to its specific Town/Area for grouping in the UI
+export const POI_LOCATIONS: Record<string, string> = {
+  // Amposta
+  "Pont Penjant d'Amposta": "Amposta",
+  "Castell d'Amposta": "Amposta",
+  "Museu de les Terres de l'Ebre": "Amposta",
+  "Cases Modernistes (Casa Fàbregues)": "Amposta",
+  "Mercat Municipal": "Amposta",
+  "Façana Fluvial": "Amposta",
+  "Port d'Amposta (Restaurants)": "Amposta",
+  // Delta
+  "MónNatura Delta de l'Ebre": "Delta de l'Ebre",
+  "Llacuna de l'Encanyissada": "Delta de l'Ebre",
+  "Casa de Fusta": "Delta de l'Ebre",
+  "Llacuna de la Tancada": "Delta de l'Ebre",
+  "Platja del Trabucador": "Delta de l'Ebre",
+  "Illa de Buda (Vistes des del mirador)": "Delta de l'Ebre",
+  "El Garxal": "Delta de l'Ebre",
+  "Muscleres del Delta (Degustació)": "Delta de l'Ebre",
+  "Poble Nou del Delta": "Delta de l'Ebre",
+  "Camps d'Arròs (Visita agrària)": "Delta de l'Ebre",
+  "Ullals de Baltasar (Surgències d'aigua)": "Delta de l'Ebre",
+  "Punta del Fangar (Dunes)": "Delta de l'Ebre",
+  "Punta de la Banya": "Delta de l'Ebre",
+  "Desembocadura del Riu Ebre": "Delta de l'Ebre",
+  // Tortosa
+  "Catedral de Santa Maria": "Tortosa",
+  "Castell de la Suda (Parador)": "Tortosa",
+  "Reials Col·legis": "Tortosa",
+  "Refugi Antiaeri núm. 4": "Tortosa",
+  "Jardins del Príncep": "Tortosa",
+  "Mercat Modernista de Tortosa": "Tortosa",
+  // Miravet
+  "Castell Templer de Miravet": "Miravet",
+  "Nucli Antic (Cap de la Vila)": "Miravet",
+  "Pas de Barca (Miravet)": "Miravet",
+  "Església Vella": "Miravet",
+  // Móra / Corbera / Terra Alta
+  "Poble Vell de Corbera (Guerra Civil)": "Corbera d'Ebre",
+  "Castell de Móra d'Ebre": "Móra d'Ebre",
+  "Memorial de les Camposines": "Terra Alta",
+  "Coll del Moro": "Gandesa",
+  "Centre 115 Dies": "Corbera d'Ebre",
+  "Coves Meravelles": "Benifallet"
+};
+
+// Database of Points of Interest per Theme
+export const THEME_POIS: Record<Theme, string[]> = {
+  [Theme.HISTORICAL]: [
+    "Pont Penjant d'Amposta",
+    "Castell d'Amposta",
+    "Museu de les Terres de l'Ebre",
+    "Cases Modernistes (Casa Fàbregues)",
+    "Catedral de Santa Maria", // Tortosa
+    "Castell de la Suda (Parador)", // Tortosa
+    "Reials Col·legis", // Tortosa
+    "Castell Templer de Miravet", // Miravet
+    "Nucli Antic (Cap de la Vila)", // Miravet
+    "Pas de Barca (Miravet)", // Miravet
+    "Castell de Móra d'Ebre" // Móra
+  ],
+  [Theme.CIVIL_WAR]: [
+    "Refugi Antiaeri núm. 4", // Tortosa
+    "Poble Vell de Corbera (Guerra Civil)", // Corbera
+    "Centre 115 Dies", // Corbera
+    "Memorial de les Camposines", // Terra Alta
+    "Coll del Moro", // Gandesa
+    "Torre de la Carrova", // Amposta
+    "Espais de la Batalla de l'Ebre" // General
+  ],
+  [Theme.GEOLOGICAL]: [
+    "Coves Meravelles", // Benifallet
+    "Ullals de Baltasar (Surgències d'aigua)",
+    "Punta del Fangar (Dunes)",
+    "Punta de la Banya",
+    "Desembocadura del Riu Ebre",
+    "Serra del Montsià (La Foradada)"
+  ],
+  [Theme.NATURE]: [
+    "MónNatura Delta de l'Ebre",
+    "Llacuna de l'Encanyissada",
+    "Casa de Fusta",
+    "Llacuna de la Tancada",
+    "Platja del Trabucador",
+    "Illa de Buda (Vistes des del mirador)",
+    "El Garxal",
+    "Jardins del Príncep" // Tortosa
+  ],
+  [Theme.GASTRONOMIC]: [
+    "Muscleres del Delta (Degustació)",
+    "Poble Nou del Delta",
+    "Port d'Amposta (Restaurants)",
+    "Mercat Municipal", // Amposta
+    "Mercat Modernista de Tortosa", // Tortosa
+    "Camps d'Arròs (Visita agrària)"
+  ],
+  [Theme.CUSTOM]: [] // Populated dynamically
 };
 
 interface Translation {
@@ -45,6 +146,7 @@ interface Translation {
   section_2_title: string;
   section_3_title: string;
   section_4_title: string;
+  section_pois_title: string;
   label_duration: string;
   label_day: string;
   label_days: string;
@@ -55,6 +157,7 @@ interface Translation {
   label_extra_hint: string;
   label_custom_selection: string;
   label_custom_transport_selection: string;
+  label_pois_hint: string;
   themes: Record<Theme, { label: string; desc: string }>;
   transports: Record<Transport, string>;
   results: {
@@ -121,8 +224,8 @@ interface Translation {
 
 export const TRANSLATIONS: Record<Language, Translation> = {
   ca: {
-    title: "Amposta",
-    subtitle: "La teva guia intel·ligent per descobrir Amposta i el Delta de l'Ebre.",
+    title: "Ebre",
+    subtitle: "Descobreix Amposta, Tortosa, Miravet i el Delta de l'Ebre.",
     beta: "Beta AI",
     generate_btn: "Generar Ruta",
     generating_btn: "Planificant...",
@@ -134,39 +237,41 @@ export const TRANSLATIONS: Record<Language, Translation> = {
     section_2_title: "Durada i Data",
     section_3_title: "Transport",
     section_4_title: "Alguna cosa més? (Opcional)",
+    section_pois_title: "Llocs específics i Pobles",
     label_duration: "DURADA",
     label_day: "Dia",
     label_days: "Dies",
-    label_date: "DATA D'INICI",
-    label_date_hint: "Inclourem esdeveniments locals si coincideixen.",
+    label_date: "DATA D'INICI (Recomanat)",
+    label_date_hint: "Controlarem dies de tancament (dilluns) i festius.",
     label_river_option: "Incloure ruta riu amunt",
     label_river_hint: "Afegir visita a **Tortosa** o **Miravet** via fluvial.",
     label_extra_hint: "Ex: Viatjo amb nens, sóc vegetarià, m'interessa la fotografia...",
     label_custom_selection: "Selecciona els temes a combinar:",
     label_custom_transport_selection: "Selecciona els mitjans a combinar:",
+    label_pois_hint: "Selecciona els llocs/pobles que VOLS visitar:",
     themes: {
-      [Theme.HISTORICAL]: { label: "Històric i Cultural", desc: "Pont Penjant, Castell i nucli antic." },
-      [Theme.CIVIL_WAR]: { label: "Guerra Civil", desc: "Rutes de trinxeres, búnquers i memòria històrica." },
-      [Theme.GEOLOGICAL]: { label: "Geològic", desc: "Formacions rocoses, sediments del Delta i paisatges." },
-      [Theme.NATURE]: { label: "Monuments Naturals", desc: "Observació d'aus, l'Encanyissada i platges verges." },
-      [Theme.GASTRONOMIC]: { label: "Gastronòmic", desc: "Arròs del Delta, marisc fresc i cuina de mercat." },
+      [Theme.HISTORICAL]: { label: "Històric (Tortosa/Miravet/Amposta)", desc: "Catedrals, Castells Templers i Modernisme." },
+      [Theme.CIVIL_WAR]: { label: "Guerra Civil (Corbera/Terra Alta)", desc: "Trinxeres, Poble Vell i espais de memòria." },
+      [Theme.GEOLOGICAL]: { label: "Geològic i Coves", desc: "Coves Meravelles, Ports i Delta." },
+      [Theme.NATURE]: { label: "Natura i Delta", desc: "Observació d'aus, llacunes i platges verges." },
+      [Theme.GASTRONOMIC]: { label: "Gastronòmic i Vins", desc: "Arròs del Delta, clotxa i vins de la Terra Alta." },
       [Theme.CUSTOM]: { label: "Personalitzat (Mix)", desc: "Crea la teva pròpia aventura combinant temes." }
     },
     transports: {
-      [Transport.WALKING]: "A peu / Transport Públic",
-      [Transport.BUS]: "Autobús (Hife/Locals)",
+      [Transport.WALKING]: "A peu (Dins pobles)",
+      [Transport.BUS]: "Autobús (Hife)",
       [Transport.CAR]: "Cotxe propi",
       [Transport.RIVER]: "Vaixell / Transport Fluvial",
-      [Transport.TRAIN]: "Tren (Estació l'Aldea)",
-      [Transport.BIKE]: "Bicicleta / Cicloturismo",
+      [Transport.TRAIN]: "Tren (Rodalies/Mitja Distància)",
+      [Transport.BIKE]: "Bicicleta / Via Verda",
       [Transport.MIX]: "Mix / Combinat"
     },
     results: {
       itinerary_title: "El teu Itinerari",
       scheduled_date: "Data programada",
       suggested_route: "Ruta suggerida",
-      river_note_upriver: "Mostrant ruta aproximada del riu entre Amposta i localitats històriques (Tortosa/Miravet). Consulta horaris.",
-      river_note_local: "Mostrant accessibilitat des de l'embarcador detectat cap als punts d'interès.",
+      river_note_upriver: "Ruta que connecta el Delta amb l'interior (Tortosa/Miravet).",
+      river_note_local: "Mostrant accessibilitat des de l'embarcador detectat.",
       view_full_river_route: "Veure ruta fluvial completa",
       pier_locations: "Embarcadors clau",
       river_route_title: "Ruta Fluvial Ebre",
@@ -178,7 +283,7 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       web_info: "Web Info",
       book_table: "Reservar Taula",
       search_tickets: "Cercar Entrades",
-      verify_warning: "* Es recomana verificar preus i horaris directament als llocs oficials.",
+      verify_warning: "* Important: Verifica sempre els horaris. Molts museus tanquen els dilluns.",
       detected_places: "Puntos d'interès detectats",
       verified_sources: "Fonts Web Verificades",
       view_map: "Veure a l'app",
@@ -194,8 +299,8 @@ export const TRANSLATIONS: Record<Language, Translation> = {
         [Transport.WALKING]: "A peu",
         [Transport.BUS]: "Bus",
         [Transport.CAR]: "Vehicle",
-        [Transport.RIVER]: "Fluvial + A peu",
-        [Transport.TRAIN]: "Tren + Enllaç",
+        [Transport.RIVER]: "Fluvial",
+        [Transport.TRAIN]: "Tren",
         [Transport.BIKE]: "Bici",
         [Transport.MIX]: "Combinat"
       },
@@ -220,41 +325,36 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       api_missing: "No s'ha pogut connectar amb l'assistent."
     },
     delta_info: {
-        title: "Descobreix el Delta de l'Ebre",
-        subtitle: "Natura, tradició i paisatges únics",
+        title: "Terres de l'Ebre",
+        subtitle: "Reserva de la Biosfera",
         content: `
-El **Delta de l'Ebre** és l'hàbitat aquàtic més important de la Mediterrània occidental, després de la Camarga (França) i el segon d'Espanya, després del Parc Nacional de Doñana.
+Més enllà del Delta, les **Terres de l'Ebre** ofereixen un patrimoni excepcional riu amunt:
 
-### 🌿 Ecosistemes Únics
-El Delta ofereix una varietat de paisatges que canvien amb les estacions:
-*   **Llacunes:** Com **l'Encanyissada** o la **Tancada**, vitals per a la pesca i la vida salvatge.
-*   **Platges:** Extenses i verges com la del **Trabucador** o la **Marquesa**.
-*   **Els Ullals:** Petites basses d'aigua dolça subterrània (com els de Baltasar).
+### 🏰 Patrimoni Històric
+*   **Tortosa:** Ciutat bimil·lenària amb la **Catedral de Santa Maria**, el Castell de la Suda i els Reials Col·legis (renaixement).
+*   **Miravet:** Un dels pobles més bonics de Catalunya, amb el seu imponent **Castell Templer** sobre el riu i el pas de barca tradicional.
+*   **Corbera d'Ebre:** El **Poble Vell**, destruït durant la Batalla de l'Ebre, és avui un símbol de la pau.
 
-### 🔭 Activitats Destacades
-*   **Observació d'aus (Birdwatching):** Més de 300 espècies d'aus, incloent la colònia de **flamencs** més emblemàtica.
-*   **Creuers Fluvials:** Navega per la desembocadura fins a l'Illa de Buda per gaudir d'una perspectiva única del riu i el mar.
-*   **Cicloturisme:** El terreny totalment pla fa que recórrer el Delta en bicicleta sigui una activitat perfecta per a totes les edats.
-*   **Gastronomia:** No marxis sense tastar un bon **arròs del Delta**, l'anguila fumada o els musclos del terreny.
+### 🌿 Natura i Aventura
+*   **El Delta:** Llacunes, arrossars i platges infinites.
+*   **Els Ports:** Muntanyes salvatges ideals per al senderisme i el barranquisme.
+*   **Via Verda:** Antiga via de tren convertida en ruta cicloturista que connecta la muntanya amb el mar.
 `
     },
     travel_tips: {
-        title: "Consells de Viatge",
-        subtitle: "Informació pràctica, seguretat i costums",
+        title: "Consells Logístics",
+        subtitle: "Horaris i Mobilitat",
         content: `
-*   **🦟 Mosquits:** Imprescindible repel·lent fort, especialment a l'estiu i al capvespre.
-*   **📅 Millor època:** Primavera/Tardor (aus) i Estiu (platja).
-*   **🍽️ Horaris:** Dinar 13:30-15:30 | Sopar 21:00-23:00.
-*   **🗣️ Idioma:** Català i Castellà. Un "Bon dia" sempre s'agraeix.
-*   **☀️ Protecció:** El sol al Delta crema molt; porta gorra i crema solar.
-*   **💵 Propines:** No són obligatòries, però deixar un 5-10% és un bon costum si el servei agrada.
-*   **🆘 Emergències:** **112** (General), **061** (Salut), **062** (Guàrdia Civil).
+*   **🕒 Horaris de Museus:** La majoria de museus i monuments (Castell de Miravet, Catedral de Tortosa) **TANQUEN ELS DILLUNS**. Planifica activitats de natura per als dilluns.
+*   **🚆 Tren i Bus:** L'estació de l'Aldea connecta amb Barcelona/València. Per moure's entre pobles (Tortosa-Amposta-La Ràpita), el bus HIFE és l'opció principal.
+*   **🛳️ Riu:** Els vaixells turístics tenen horaris estacionals. A l'hivern la freqüència baixa molt.
+*   **🍽️ Dinar:** A l'interior (Terra Alta/Ribera), els horaris de dinar són estrictes (13:30-15:00). Reserva sempre en cap de setmana.
 `
     }
   },
   es: {
-    title: "Amposta",
-    subtitle: "Tu guía inteligente para descubrir Amposta y el Delta del Ebro.",
+    title: "Ebro",
+    subtitle: "Descubre Amposta, Tortosa, Miravet y el Delta del Ebro.",
     beta: "Beta AI",
     generate_btn: "Generar Ruta",
     generating_btn: "Planificando...",
@@ -266,39 +366,41 @@ El Delta ofereix una varietat de paisatges que canvien amb les estacions:
     section_2_title: "Duración y Fecha",
     section_3_title: "Transporte",
     section_4_title: "¿Algo más? (Opcional)",
+    section_pois_title: "Lugares específicos y Pueblos",
     label_duration: "DURACIÓN",
     label_day: "Día",
     label_days: "Días",
-    label_date: "FECHA DE INICIO",
-    label_date_hint: "Incluiremos eventos locales si coinciden.",
+    label_date: "FECHA DE INICIO (Recomendado)",
+    label_date_hint: "Controlaremos días de cierre (lunes) y festivos.",
     label_river_option: "Incluir ruta río arriba",
     label_river_hint: "Añadir visita a **Tortosa** o **Miravet** vía fluvial.",
     label_extra_hint: "Ej: Viajo con niños, soy vegetariano, me interesa la fotografía...",
     label_custom_selection: "Selecciona los temas a combinar:",
     label_custom_transport_selection: "Selecciona los medios a combinar:",
+    label_pois_hint: "Selecciona los lugares/pueblos que QUIERES visitar:",
     themes: {
-      [Theme.HISTORICAL]: { label: "Histórico y Cultural", desc: "Puente Colgante, Castillo y casco antiguo." },
-      [Theme.CIVIL_WAR]: { label: "Guerra Civil", desc: "Rutas de trincheras, búnkeres y memoria histórica." },
-      [Theme.GEOLOGICAL]: { label: "Geológico", desc: "Formaciones rocosas, sedimentos del Delta y paisajes." },
-      [Theme.NATURE]: { label: "Monumentos Naturales", desc: "Avistamiento de aves, la Encanyissada y playas vírgenes." },
-      [Theme.GASTRONOMIC]: { label: "Gastronómico", desc: "Arroz del Delta, mariscos frescos y cocina de mercado." },
+      [Theme.HISTORICAL]: { label: "Histórico (Tortosa/Miravet/Amposta)", desc: "Catedrales, Castillos Templarios y Modernismo." },
+      [Theme.CIVIL_WAR]: { label: "Guerra Civil (Corbera/Terra Alta)", desc: "Trincheras, Pueblo Viejo y espacios de memoria." },
+      [Theme.GEOLOGICAL]: { label: "Geológico y Cuevas", desc: "Cuevas Meravelles, Ports y Delta." },
+      [Theme.NATURE]: { label: "Naturaleza y Delta", desc: "Avistamiento de aves, lagunas y playas vírgenes." },
+      [Theme.GASTRONOMIC]: { label: "Gastronómico y Vinos", desc: "Arroz del Delta, clotxa y vinos de la Terra Alta." },
       [Theme.CUSTOM]: { label: "Personalizado (Mix)", desc: "Crea tu propia aventura combinando temas." }
     },
     transports: {
-      [Transport.WALKING]: "A pie / Transporte Público",
-      [Transport.BUS]: "Autobús (Hife/Locals)",
+      [Transport.WALKING]: "A pie (En pueblos)",
+      [Transport.BUS]: "Autobús (Hife)",
       [Transport.CAR]: "Coche propio",
       [Transport.RIVER]: "Barco / Transporte Fluvial",
-      [Transport.TRAIN]: "Tren (Estación l'Aldea)",
-      [Transport.BIKE]: "Bicicleta / Cicloturismo",
+      [Transport.TRAIN]: "Tren (Rodalies/Media Distancia)",
+      [Transport.BIKE]: "Bicicleta / Vía Verde",
       [Transport.MIX]: "Mix / Combinado"
     },
     results: {
       itinerary_title: "Tu Itinerario",
       scheduled_date: "Fecha programada",
       suggested_route: "Ruta sugerida",
-      river_note_upriver: "Mostrando ruta aproximada del río entre Amposta y localidades históricas (Tortosa/Miravet). Consulta horarios.",
-      river_note_local: "Mostrando accesibilidad desde el embarcadero detectatado hacia los puntos de interés.",
+      river_note_upriver: "Ruta que conecta el Delta con el interior (Tortosa/Miravet).",
+      river_note_local: "Mostrando accesibilidad desde el embarcadero detectado.",
       view_full_river_route: "Ver ruta fluvial completa",
       pier_locations: "Embarcaderos clave",
       river_route_title: "Ruta Fluvial Ebro",
@@ -310,7 +412,7 @@ El Delta ofereix una varietat de paisatges que canvien amb les estacions:
       web_info: "Web Info",
       book_table: "Reservar Mesa",
       search_tickets: "Buscar Tickets",
-      verify_warning: "* Se recomienda verificar precios y horarios directamente en los sitios oficiales.",
+      verify_warning: "* Importante: Verifica siempre los horarios. Muchos museos cierran los lunes.",
       detected_places: "Puntos de interés detectados",
       verified_sources: "Fuentes Web Verificadas",
       view_map: "Ver en app",
@@ -326,8 +428,8 @@ El Delta ofereix una varietat de paisatges que canvien amb les estacions:
         [Transport.WALKING]: "A pie",
         [Transport.BUS]: "Bus",
         [Transport.CAR]: "Vehículo",
-        [Transport.RIVER]: "Fluvial + A pie",
-        [Transport.TRAIN]: "Tren + Enlace",
+        [Transport.RIVER]: "Fluvial",
+        [Transport.TRAIN]: "Tren",
         [Transport.BIKE]: "Bici",
         [Transport.MIX]: "Combinado"
       },
@@ -352,41 +454,36 @@ El Delta ofereix una varietat de paisatges que canvien amb les estacions:
       api_missing: "No se pudo conectar con el asistente."
     },
     delta_info: {
-        title: "Descubre el Delta del Ebro",
-        subtitle: "Naturaleza, tradición y paisajes únicos",
+        title: "Terres de l'Ebre",
+        subtitle: "Reserva de la Biosfera",
         content: `
-El **Delta del Ebro** es el hábitat acuático más importante del Mediterráneo occidental, después de la Camarga (Francia) y el segundo de España, tras el Parque Nacional de Doñana.
+Más allá del Delta, las **Terres de l'Ebre** ofrecen un patrimonio excepcional río arriba:
 
-### 🌿 Ecosistemas Únicos
-El Delta ofrece una variedad de paisajes que cambian con las estaciones:
-*   **Lagunas:** Como **l'Encanyissada** o la **Tancada**, vitales para la pesca y la vida salvaje.
-*   **Playas:** Extensas y vírgenes como la del **Trabucador** o la **Marquesa**.
-*   **Els Ullals:** Pequeñas balsas de agua dulce subterránea (como los de Baltasar).
+### 🏰 Patrimonio Histórico
+*   **Tortosa:** Ciudad bimilenaria con la **Catedral de Santa María**, el Castillo de la Suda y los Reales Colegios (renacimiento).
+*   **Miravet:** Uno de los pueblos más bonitos de Cataluña, con su imponente **Castillo Templario** sobre el río y el paso de barca tradicional.
+*   **Corbera d'Ebre:** El **Pueblo Viejo**, destruido durante la Batalla del Ebro, es hoy un símbolo de la paz.
 
-### 🔭 Actividades Destacadas
-*   **Avistamiento de aves (Birdwatching):** Más de 300 especies de aves, incluyendo la colonia de **flamencos** más emblemática.
-*   **Cruceros Fluviales:** Navega por la desembocadura hasta la Isla de Buda para disfrutar de una perspectiva única del río y el mar.
-*   **Cicloturismo:** El terreno totalmente llano hace que recorrer el Delta en bicicleta sea una actividad perfecta para todas las edades.
-*   **Gastronomía:** No te vayas sin probar un buen **arroz del Delta**, la anguila ahumada o los mejillones del terreno.
+### 🌿 Naturaleza y Aventura
+*   **El Delta:** Lagunas, arrozales y playas infinitas.
+*   **Els Ports:** Montañas salvajes ideales para el senderismo y el barranquismo.
+*   **Vía Verde:** Antigua vía de tren convertida en ruta cicloturista que conecta la montaña con el mar.
 `
     },
     travel_tips: {
-        title: "Consejos de Viaje",
-        subtitle: "Información práctica, seguridad y costumbres",
+        title: "Consejos Logísticos",
+        subtitle: "Horarios y Movilidad",
         content: `
-*   **🦟 Mosquitos:** Imprescindible repelente fuerte (especialmente en verano y al atardecer).
-*   **📅 Mejor época:** Primavera/Otoño (aves) y Verano (playa).
-*   **🍽️ Horarios:** Comida 13:30-15:30 | Cena 21:00-23:00.
-*   **🗣️ Idioma:** Catalán y Castellano. Un "Bon dia" siempre se agradece.
-*   **☀️ Protección:** El sol es muy fuerte; lleva gorra y crema solar.
-*   **💵 Propinas:** No obligatorias, pero dejar un 5-10% es costumbre si el servicio es bueno.
-*   **🆘 Emergencias:** **112** (General), **061** (Salud), **062** (Guardia Civil).
+*   **🕒 Horarios de Museos:** La mayoría de museos y monumentos (Castillo de Miravet, Catedral de Tortosa) **CIERRAN LOS LUNES**. Planifica actividades de naturaleza para los lunes.
+*   **🚆 Tren y Bus:** La estación de l'Aldea conecta con Barcelona/Valencia. Para moverse entre pueblos (Tortosa-Amposta-La Ràpita), el bus HIFE es la opción principal.
+*   **🛳️ Río:** Los barcos turísticos tienen horarios estacionales. En invierno la frecuencia baja mucho.
+*   **🍽️ Comida:** En el interior (Terra Alta/Ribera), los horarios de comida son estrictos (13:30-15:00). Reserva siempre en fin de semana.
 `
     }
   },
   en: {
-    title: "Amposta",
-    subtitle: "Your intelligent guide to discover Amposta and the Ebro Delta.",
+    title: "Ebro",
+    subtitle: "Discover Amposta, Tortosa, Miravet and the Ebro Delta.",
     beta: "Beta AI",
     generate_btn: "Generate Route",
     generating_btn: "Planning...",
@@ -398,39 +495,41 @@ El Delta ofrece una variedad de paisajes que cambian con las estaciones:
     section_2_title: "Duration & Date",
     section_3_title: "Transport",
     section_4_title: "Anything else? (Optional)",
+    section_pois_title: "Specific Places & Towns",
     label_duration: "DURATION",
     label_day: "Day",
     label_days: "Days",
-    label_date: "START DATE",
-    label_date_hint: "We will include local events if they match.",
+    label_date: "START DATE (Recommended)",
+    label_date_hint: "We will check for closing days (Mondays) and holidays.",
     label_river_option: "Include upriver route",
     label_river_hint: "Add visit to **Tortosa** or **Miravet** via river.",
     label_extra_hint: "Ex: Traveling with kids, vegetarian, interested in photography...",
     label_custom_selection: "Select themes to combine:",
     label_custom_transport_selection: "Select transport modes to combine:",
+    label_pois_hint: "Select places/towns you WANT to visit:",
     themes: {
-      [Theme.HISTORICAL]: { label: "Historical & Cultural", desc: "Suspension Bridge, Castle and Old Town." },
-      [Theme.CIVIL_WAR]: { label: "Civil War", desc: "Trenches, bunkers and historical memory routes." },
-      [Theme.GEOLOGICAL]: { label: "Geological", desc: "Rock formations, Delta sediments and landscapes." },
-      [Theme.NATURE]: { label: "Nature Monuments", desc: "Birdwatching, Encanyissada lagoon and virgin beaches." },
-      [Theme.GASTRONOMIC]: { label: "Gastronomic", desc: "Delta rice, fresh seafood and market cuisine." },
+      [Theme.HISTORICAL]: { label: "Historical (Tortosa/Miravet/Amposta)", desc: "Cathedrals, Templar Castles and Modernism." },
+      [Theme.CIVIL_WAR]: { label: "Civil War (Corbera/Terra Alta)", desc: "Trenches, Old Town ruins and memory spaces." },
+      [Theme.GEOLOGICAL]: { label: "Geological & Caves", desc: "Meravelles Caves, Ports mountains and Delta." },
+      [Theme.NATURE]: { label: "Nature & Delta", desc: "Birdwatching, lagoons and virgin beaches." },
+      [Theme.GASTRONOMIC]: { label: "Gastronomic & Wine", desc: "Delta rice, clotxa and Terra Alta wines." },
       [Theme.CUSTOM]: { label: "Custom (Mix)", desc: "Create your own adventure by combining themes." }
     },
     transports: {
-      [Transport.WALKING]: "Walking / Public Transport",
-      [Transport.BUS]: "Bus (Hife/Local)",
+      [Transport.WALKING]: "Walking (In towns)",
+      [Transport.BUS]: "Bus (Hife)",
       [Transport.CAR]: "Own Car",
       [Transport.RIVER]: "Boat / River Transport",
-      [Transport.TRAIN]: "Train (Station l'Aldea)",
-      [Transport.BIKE]: "Bicycle / Cycling",
+      [Transport.TRAIN]: "Train (Regional/Mid-distance)",
+      [Transport.BIKE]: "Bicycle / Green Way",
       [Transport.MIX]: "Mix / Combined"
     },
     results: {
       itinerary_title: "Your Itinerary",
       scheduled_date: "Scheduled date",
       suggested_route: "Suggested route",
-      river_note_upriver: "Showing approximate river route between Amposta and historical towns (Tortosa/Miravet). Check schedules.",
-      river_note_local: "Showing accessibility from the detected pier to points of interest.",
+      river_note_upriver: "Route connecting the Delta with the interior (Tortosa/Miravet).",
+      river_note_local: "Showing accessibility from the detected pier.",
       view_full_river_route: "View full river route",
       pier_locations: "Key pier locations",
       river_route_title: "Ebro River Route",
@@ -442,7 +541,7 @@ El Delta ofrece una variedad de paisajes que cambian con las estaciones:
       web_info: "Web Info",
       book_table: "Book Table",
       search_tickets: "Search Tickets",
-      verify_warning: "* It is recommended to verify prices and schedules on official sites.",
+      verify_warning: "* Important: Always check schedules. Many museums are CLOSED ON MONDAYS.",
       detected_places: "Detected Points of Interest",
       verified_sources: "Verified Web Sources",
       view_map: "View in app",
@@ -458,8 +557,8 @@ El Delta ofrece una variedad de paisajes que cambian con las estaciones:
         [Transport.WALKING]: "Walking",
         [Transport.BUS]: "Bus",
         [Transport.CAR]: "Car",
-        [Transport.RIVER]: "River + Walking",
-        [Transport.TRAIN]: "Train + Link",
+        [Transport.RIVER]: "River",
+        [Transport.TRAIN]: "Train",
         [Transport.BIKE]: "Bike",
         [Transport.MIX]: "Combined"
       },
@@ -484,35 +583,30 @@ El Delta ofrece una variedad de paisajes que cambian con las estaciones:
       api_missing: "Could not connect to the travel assistant."
     },
     delta_info: {
-        title: "Discover the Ebro Delta",
-        subtitle: "Nature, tradition, and unique landscapes",
+        title: "Terres de l'Ebre",
+        subtitle: "Biosphere Reserve",
         content: `
-The **Ebro Delta** is the most important aquatic habitat in the Western Mediterranean, after the Camargue (France), and the second in Spain, after Doñana National Park.
+Beyond the Delta, **Terres de l'Ebre** offers exceptional heritage upriver:
 
-### 🌿 Unique Ecosystems
-The Delta offers a variety of landscapes that change with the seasons:
-*   **Lagoons:** Such as **l'Encanyissada** or **la Tancada**, vital for fishing and wildlife.
-*   **Beaches:** Extensive and virgin beaches like **Trabucador** or **Marquesa**.
-*   **Els Ullals:** Small freshwater pools from underground springs (like Baltasar's).
+### 🏰 Historical Heritage
+*   **Tortosa:** Two-thousand-year-old city with the **Cathedral of Santa Maria**, the Suda Castle, and Royal Colleges.
+*   **Miravet:** One of the most beautiful villages in Catalonia, with its imposing **Templar Castle** overlooking the river.
+*   **Corbera d'Ebre:** The **Old Town**, destroyed during the Battle of the Ebro, remains as a peace memorial.
 
-### 🔭 Highlighted Activities
-*   **Birdwatching:** More than 300 bird species, including the iconic **flamingo** colony.
-*   **River Cruises:** Sail through the river mouth to Buda Island to enjoy a unique perspective of the river and the sea.
-*   **Cycling:** The completely flat terrain makes cycling through the Delta a perfect activity for all ages.
-*   **Gastronomy:** Don't leave without tasting a good **Delta rice**, smoked eel, or local mussels.
+### 🌿 Nature & Adventure
+*   **The Delta:** Lagoons, rice fields, and endless beaches.
+*   **Els Ports:** Wild mountains ideal for hiking and canyoning.
+*   **Green Way:** Old railway line converted into a cycling route connecting the mountains to the sea.
 `
     },
     travel_tips: {
-        title: "Travel Tips",
-        subtitle: "Practical info, safety & customs",
+        title: "Logistics Tips",
+        subtitle: "Schedules & Mobility",
         content: `
-*   **🦟 Mosquitoes:** Strong repellent is essential, especially if visiting the Delta in summer or at sunrise/sunset.
-*   **📅 Best Time:** Spring (April-May) and Autumn (September-October) are ideal for birdwatching. Summer is perfect for enjoying the beaches.
-*   **🍽️ Timings:** Lunch is usually between 1:30 PM and 3:30 PM, and dinner between 9:00 PM and 11:00 PM. Many kitchens close outside these hours.
-*   **🗣️ Language:** Both Catalan and Spanish are spoken. A simple "Bon dia" is always appreciated.
-*   **☀️ Protection:** The sun is very strong; wear a hat and sunscreen.
-*   **💵 Tipping:** Not mandatory, but 5-10% is customary for good service.
-*   **🆘 Emergencies:** **112** (General), **061** (Health).
+*   **🕒 Museum Hours:** Most museums and monuments (Miravet Castle, Tortosa Cathedral) are **CLOSED ON MONDAYS**. Plan nature activities for Mondays.
+*   **🚆 Train & Bus:** L'Aldea station connects with Barcelona/Valencia. To move between towns (Tortosa-Amposta-La Ràpita), the HIFE bus is the main option.
+*   **🛳️ River:** Tourist boats have seasonal schedules. In winter, frequency drops significantly.
+*   **🍽️ Dining:** In the interior (Terra Alta/Ribera), lunch hours are strict (1:30 PM - 3:00 PM). Always book on weekends.
 `
     }
   }

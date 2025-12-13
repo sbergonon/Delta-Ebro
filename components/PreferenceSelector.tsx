@@ -1,10 +1,7 @@
-
-
-
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { UserPreferences, Theme, Transport } from '../types';
-import { THEME_ICONS, TRANSPORT_ICONS, TRANSLATIONS } from '../constants';
+import { THEME_ICONS, TRANSPORT_ICONS, TRANSLATIONS, THEME_POIS, POI_LOCATIONS } from '../constants';
 
 interface PreferenceSelectorProps {
   prefs: UserPreferences;
@@ -13,8 +10,13 @@ interface PreferenceSelectorProps {
 
 const PreferenceSelector: React.FC<PreferenceSelectorProps> = ({ prefs, onChange }) => {
   const t = TRANSLATIONS[prefs.language];
+  const [activeLocationFilter, setActiveLocationFilter] = useState<string>('ALL');
 
-  const handleThemeChange = (theme: Theme) => onChange({ ...prefs, theme });
+  const handleThemeChange = (theme: Theme) => {
+    // When theme changes, clear selected POIs and reset filter
+    onChange({ ...prefs, theme, selectedPOIs: [] });
+    setActiveLocationFilter('ALL');
+  };
   
   const handleCustomThemeToggle = (subTheme: Theme) => {
     const currentCustom = prefs.customThemes || [];
@@ -25,6 +27,17 @@ const PreferenceSelector: React.FC<PreferenceSelectorProps> = ({ prefs, onChange
         newCustom = [...currentCustom, subTheme];
     }
     onChange({ ...prefs, customThemes: newCustom });
+  };
+
+  const handlePoiToggle = (poi: string) => {
+    const currentPOIs = prefs.selectedPOIs || [];
+    let newPOIs: string[];
+    if (currentPOIs.includes(poi)) {
+        newPOIs = currentPOIs.filter(p => p !== poi);
+    } else {
+        newPOIs = [...currentPOIs, poi];
+    }
+    onChange({ ...prefs, selectedPOIs: newPOIs });
   };
 
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...prefs, duration: parseInt(e.target.value) });
@@ -51,6 +64,48 @@ const PreferenceSelector: React.FC<PreferenceSelectorProps> = ({ prefs, onChange
 
   // Calculate min date as today
   const today = new Date().toISOString().split('T')[0];
+
+  // 1. Get all potential POIs based on current theme(s)
+  const allPotentialPOIs = useMemo(() => {
+      let flatPOIs: string[] = [];
+      if (prefs.theme === Theme.CUSTOM && prefs.customThemes && prefs.customThemes.length > 0) {
+          prefs.customThemes.forEach(ct => {
+              if (THEME_POIS[ct]) flatPOIs = [...flatPOIs, ...THEME_POIS[ct]];
+          });
+          flatPOIs = [...new Set(flatPOIs)];
+      } else if (THEME_POIS[prefs.theme]) {
+          flatPOIs = THEME_POIS[prefs.theme];
+      }
+      return flatPOIs;
+  }, [prefs.theme, prefs.customThemes]);
+
+  // 2. Extract available locations from the potential POIs
+  const availableLocations = useMemo(() => {
+      const locations = new Set<string>();
+      allPotentialPOIs.forEach(poi => {
+          locations.add(POI_LOCATIONS[poi] || "Altres / General");
+      });
+      return Array.from(locations).sort();
+  }, [allPotentialPOIs]);
+
+  // 3. Group POIs by location, respecting the active filter
+  const groupedPOIs = useMemo(() => {
+      const groups: Record<string, string[]> = {};
+      allPotentialPOIs.forEach(poi => {
+          const loc = POI_LOCATIONS[poi] || "Altres / General";
+          
+          // Apply filter
+          if (activeLocationFilter !== 'ALL' && loc !== activeLocationFilter) {
+              return;
+          }
+
+          if (!groups[loc]) groups[loc] = [];
+          groups[loc].push(poi);
+      });
+      return groups;
+  }, [allPotentialPOIs, activeLocationFilter]);
+
+  const hasPOIs = allPotentialPOIs.length > 0;
 
   return (
     <div className="space-y-8 animate-fade-in-up">
@@ -121,6 +176,94 @@ const PreferenceSelector: React.FC<PreferenceSelectorProps> = ({ prefs, onChange
                 </div>
             </div>
         )}
+
+        {/* POI Selection Grid (Grouped by Town) */}
+        {hasPOIs && (
+            <div className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-xl animate-fade-in">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                   <div className="flex items-center gap-2">
+                      <h4 className="text-sm font-bold text-stone-800">{t.section_pois_title}</h4>
+                      <span className="text-xs text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-100">{t.label_pois_hint}</span>
+                   </div>
+                </div>
+                
+                <div className="space-y-6">
+                    {Object.keys(groupedPOIs).length === 0 ? (
+                        <div className="text-center py-4 text-sm text-slate-400 italic bg-white rounded-lg border border-dashed border-slate-200">
+                           No hay lugares para este filtro.
+                        </div>
+                    ) : (
+                        Object.entries(groupedPOIs).map(([location, pois]) => (
+                            <div key={location} className="animate-fade-in">
+                                <h5 className="text-xs font-bold text-teal-700 uppercase mb-2 flex items-center gap-1 border-b border-slate-200 pb-1">
+                                    📍 {location}
+                                </h5>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {(pois as string[]).map((poi, idx) => {
+                                        const isSelected = (prefs.selectedPOIs || []).includes(poi);
+                                        return (
+                                            <label 
+                                                key={idx} 
+                                                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all hover:shadow-sm ${
+                                                    isSelected 
+                                                    ? 'bg-white border-teal-500 ring-1 ring-teal-500' 
+                                                    : 'bg-white border-slate-200 hover:border-teal-300'
+                                                }`}
+                                            >
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={isSelected}
+                                                    onChange={() => handlePoiToggle(poi)}
+                                                    className="mt-1 w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                                                />
+                                                <span className={`text-sm ${isSelected ? 'text-teal-900 font-medium' : 'text-slate-600'}`}>
+                                                    {poi}
+                                                </span>
+                                            </label>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {/* Location Filters - Moved Below Grid */}
+                {availableLocations.length > 1 && (
+                   <div className="mt-6 pt-4 border-t border-slate-100 animate-fade-in">
+                       <div className="flex items-center gap-2 mb-2">
+                           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Filtrar per zona / Filter by area:</span>
+                       </div>
+                       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 max-w-full">
+                           <button
+                               onClick={() => setActiveLocationFilter('ALL')}
+                               className={`text-[10px] uppercase font-bold px-3 py-1.5 rounded-md border whitespace-nowrap transition-colors ${
+                                   activeLocationFilter === 'ALL'
+                                   ? 'bg-stone-600 text-white border-stone-600'
+                                   : 'bg-white text-stone-500 border-slate-200 hover:bg-stone-100'
+                               }`}
+                           >
+                               ALL
+                           </button>
+                           {availableLocations.map(loc => (
+                               <button
+                                   key={loc}
+                                   onClick={() => setActiveLocationFilter(loc)}
+                                   className={`text-[10px] uppercase font-bold px-3 py-1.5 rounded-md border whitespace-nowrap transition-colors ${
+                                       activeLocationFilter === loc
+                                       ? 'bg-teal-600 text-white border-teal-600'
+                                       : 'bg-white text-slate-500 border-slate-200 hover:text-teal-600 hover:border-teal-200'
+                                   }`}
+                               >
+                                   {loc}
+                               </button>
+                           ))}
+                       </div>
+                   </div>
+                )}
+            </div>
+        )}
+
       </section>
 
       {/* Details Grid */}
