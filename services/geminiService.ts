@@ -1,5 +1,6 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
-import { UserPreferences, ItineraryResult, GroundingSource, ItineraryStep, Theme, Transport, Language, NearbyAttraction } from "../types";
+import { UserPreferences, ItineraryResult, GroundingSource, ItineraryStep, Theme, Transport, Language, NearbyAttraction, AccommodationMode } from "../types";
 import { TRANSLATIONS } from "../constants";
 
 const getAiClient = () => {
@@ -221,6 +222,24 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
       let locationScope = "El itinerario debe centrarse en la ciudad de Amposta, Tortosa, Miravet y el Delta del Ebro.";
       let langInstruction = `RESPOND IN ${prefs.language === 'ca' ? 'CATALAN' : prefs.language === 'es' ? 'SPANISH' : 'ENGLISH'}.`;
 
+      // ACCOMMODATION LOGIC
+      let accommodationInstruction = "";
+      if (prefs.accommodationMode === AccommodationMode.BASE) {
+          const base = prefs.baseLocation || "Amposta";
+          accommodationInstruction = `
+          ESTRATEGIA DE ALOJAMIENTO (MUY IMPORTANTE): CAMPO BASE EN ${base}.
+          1. El usuario duerme TODAS las noches en ${base}.
+          2. Cada día debe empezar saliendo de ${base} y terminar regresando a ${base}.
+          3. NO sugieras hacer "check-in" o dormir en hoteles de otros pueblos (Tortosa, Miravet, etc).
+          4. Al final de la tarde, incluye siempre el trayecto de vuelta a ${base}.
+          `;
+      } else {
+          accommodationInstruction = `
+          ESTRATEGIA DE ALOJAMIENTO: RUTA ITINERANTE.
+          El usuario puede dormir en distintos pueblos a medida que avanza la ruta. Sugiere hoteles en el destino final del día.
+          `;
+      }
+
       // LOGISTICA DE TRANSPORTE REGIONAL
       if (prefs.transport === Transport.RIVER) {
          transportInstruction = "Transporte Fluvial: Incluye rutas en barco (Miravet, Delta). Para conectar entre pueblos (Amposta-Tortosa), sugiere Barco si existe línea regular, o Bus/Taxi como alternativa para llegar al embarcadero.";
@@ -297,6 +316,7 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
         - Duración: ${durationLabel}
         - ${dateContext}
         - ${transportInstruction}
+        - ${accommodationInstruction}
         ${selectedPoisInstruction}
         ${prefs.additionalInfo ? `- Notas usuario: ${prefs.additionalInfo}` : ''}
 

@@ -1,5 +1,4 @@
 
-
 export type Language = 'ca' | 'es' | 'en';
 
 export enum Theme {
@@ -21,17 +20,26 @@ export enum Transport {
   MIX = 'mix'
 }
 
+export enum AccommodationMode {
+  BASE = 'base', // Same place every night
+  ROUTE = 'route' // Moving hotels
+}
+
 export interface UserPreferences {
   language: Language;
   theme: Theme;
   customThemes?: Theme[];
-  selectedPOIs?: string[]; // New field for specific places
+  selectedPOIs?: string[]; 
   duration: number;
   transport: Transport;
   customTransports?: Transport[];
   startDate?: string;
   additionalInfo?: string;
   includeUpriver?: boolean;
+  
+  // New Accommodation Fields
+  accommodationMode: AccommodationMode;
+  baseLocation: string; // e.g., "Amposta"
 }
 
 export interface GroundingSource {

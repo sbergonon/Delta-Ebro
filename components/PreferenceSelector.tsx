@@ -1,6 +1,7 @@
+
 import React, { useState, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { UserPreferences, Theme, Transport } from '../types';
+import { UserPreferences, Theme, Transport, AccommodationMode } from '../types';
 import { THEME_ICONS, TRANSPORT_ICONS, TRANSLATIONS, THEME_POIS, POI_LOCATIONS } from '../constants';
 
 interface PreferenceSelectorProps {
@@ -61,6 +62,10 @@ const PreferenceSelector: React.FC<PreferenceSelectorProps> = ({ prefs, onChange
   const handleInfoChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => onChange({ ...prefs, additionalInfo: e.target.value });
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...prefs, startDate: e.target.value });
   const handleUpriverChange = (e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...prefs, includeUpriver: e.target.checked });
+  
+  const handleAccommodationModeChange = (mode: AccommodationMode) => onChange({ ...prefs, accommodationMode: mode });
+  const handleBaseLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...prefs, baseLocation: e.target.value });
+
 
   // Calculate min date as today
   const today = new Date().toISOString().split('T')[0];
@@ -315,87 +320,129 @@ const PreferenceSelector: React.FC<PreferenceSelectorProps> = ({ prefs, onChange
             </div>
         </section>
 
-        {/* Transport */}
-        <section>
-          <h3 className="text-lg font-semibold text-stone-800 mb-3 flex items-center gap-2">
-            <span className="bg-teal-100 text-teal-800 p-1.5 rounded-lg text-sm">3</span>
-            {t.section_3_title}
-          </h3>
-          <div className="grid grid-cols-2 gap-2">
-            {Object.values(Transport).map((tr) => (
-              <button
-                key={tr}
-                onClick={() => handleTransportChange(tr)}
-                className={`p-3 rounded-xl border text-left transition-all duration-200 flex flex-col justify-between h-full ${
-                    prefs.transport === tr
-                    ? 'border-teal-500 bg-teal-50/50 text-teal-900 shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-teal-200'
-                }`}
-              >
-                <span className="text-2xl mb-1">{TRANSPORT_ICONS[tr]}</span>
-                <span className="text-xs font-medium leading-tight">{t.transports[tr]}</span>
-              </button>
-            ))}
-          </div>
+        {/* Transport & Accommodation */}
+        <div className="space-y-6">
+            {/* Transport */}
+            <section>
+              <h3 className="text-lg font-semibold text-stone-800 mb-3 flex items-center gap-2">
+                <span className="bg-teal-100 text-teal-800 p-1.5 rounded-lg text-sm">3</span>
+                {t.section_3_title}
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.values(Transport).map((tr) => (
+                  <button
+                    key={tr}
+                    onClick={() => handleTransportChange(tr)}
+                    className={`p-3 rounded-xl border text-left transition-all duration-200 flex flex-col justify-between h-full ${
+                        prefs.transport === tr
+                        ? 'border-teal-500 bg-teal-50/50 text-teal-900 shadow-sm'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-teal-200'
+                    }`}
+                  >
+                    <span className="text-2xl mb-1">{TRANSPORT_ICONS[tr]}</span>
+                    <span className="text-xs font-medium leading-tight">{t.transports[tr]}</span>
+                  </button>
+                ))}
+              </div>
 
-          {/* Custom Mix Selection for Transports */}
-          {prefs.transport === Transport.MIX && (
-            <div className="mt-3 p-3 bg-teal-50 border border-teal-100 rounded-xl animate-fade-in">
-                <h4 className="text-xs font-bold text-teal-800 mb-2">{t.label_custom_transport_selection}</h4>
-                <div className="flex flex-wrap gap-2">
-                    {Object.values(Transport)
-                        .filter(tr => tr !== Transport.MIX)
-                        .map(tr => {
-                            const isSelected = (prefs.customTransports || []).includes(tr);
-                            return (
-                                <button
-                                    key={tr}
-                                    onClick={() => handleCustomTransportToggle(tr)}
-                                    className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all flex items-center gap-1.5 ${
-                                        isSelected 
-                                        ? 'bg-teal-600 text-white border-teal-600 shadow-sm' 
-                                        : 'bg-white text-stone-600 border-slate-200 hover:border-teal-300'
-                                    }`}
-                                >
-                                    <span>{TRANSPORT_ICONS[tr]}</span>
-                                    {t.results.transport_labels[tr]}
-                                    {isSelected && <span className="ml-1 text-teal-200">✓</span>}
-                                </button>
-                            );
-                        })
-                    }
+              {/* Custom Mix Selection for Transports */}
+              {prefs.transport === Transport.MIX && (
+                <div className="mt-3 p-3 bg-teal-50 border border-teal-100 rounded-xl animate-fade-in">
+                    <h4 className="text-xs font-bold text-teal-800 mb-2">{t.label_custom_transport_selection}</h4>
+                    <div className="flex flex-wrap gap-2">
+                        {Object.values(Transport)
+                            .filter(tr => tr !== Transport.MIX)
+                            .map(tr => {
+                                const isSelected = (prefs.customTransports || []).includes(tr);
+                                return (
+                                    <button
+                                        key={tr}
+                                        onClick={() => handleCustomTransportToggle(tr)}
+                                        className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all flex items-center gap-1.5 ${
+                                            isSelected 
+                                            ? 'bg-teal-600 text-white border-teal-600 shadow-sm' 
+                                            : 'bg-white text-stone-600 border-slate-200 hover:border-teal-300'
+                                        }`}
+                                    >
+                                        <span>{TRANSPORT_ICONS[tr]}</span>
+                                        {t.results.transport_labels[tr]}
+                                        {isSelected && <span className="ml-1 text-teal-200">✓</span>}
+                                    </button>
+                                );
+                            })
+                        }
+                    </div>
                 </div>
-            </div>
-          )}
+              )}
 
-          {/* Special Option for River Transport */}
-          {prefs.transport === Transport.RIVER && (
-            <div className="mt-3 animate-fade-in">
-              <label className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
-                 <input 
-                   type="checkbox" 
-                   checked={prefs.includeUpriver || false}
-                   onChange={handleUpriverChange}
-                   className="mt-1 w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
-                 />
-                 <div className="flex-1">
-                    <span className="text-sm font-semibold text-blue-900 block">
-                      {t.label_river_option}
-                    </span>
-                    <span className="text-xs text-blue-700 block mt-0.5">
-                      <ReactMarkdown>{t.label_river_hint}</ReactMarkdown>
-                    </span>
-                 </div>
-              </label>
-            </div>
-          )}
-        </section>
+              {/* Special Option for River Transport */}
+              {prefs.transport === Transport.RIVER && (
+                <div className="mt-3 animate-fade-in">
+                  <label className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                     <input 
+                       type="checkbox" 
+                       checked={prefs.includeUpriver || false}
+                       onChange={handleUpriverChange}
+                       className="mt-1 w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                     />
+                     <div className="flex-1">
+                        <span className="text-sm font-semibold text-blue-900 block">
+                          {t.label_river_option}
+                        </span>
+                        <span className="text-xs text-blue-700 block mt-0.5">
+                          <ReactMarkdown>{t.label_river_hint}</ReactMarkdown>
+                        </span>
+                     </div>
+                  </label>
+                </div>
+              )}
+            </section>
+            
+            {/* Accommodation */}
+            <section>
+                <h3 className="text-lg font-semibold text-stone-800 mb-3 flex items-center gap-2">
+                    <span className="bg-teal-100 text-teal-800 p-1.5 rounded-lg text-sm">4</span>
+                    {t.section_accommodation_title}
+                </h3>
+                <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-3">
+                        {Object.values(AccommodationMode).map((mode) => (
+                             <button
+                                key={mode}
+                                onClick={() => handleAccommodationModeChange(mode)}
+                                className={`p-3 rounded-xl border text-left transition-all duration-200 flex flex-col ${
+                                    prefs.accommodationMode === mode
+                                    ? 'border-teal-500 bg-teal-50/50 text-teal-900 shadow-sm'
+                                    : 'border-slate-200 bg-white text-slate-600 hover:border-teal-200'
+                                }`}
+                             >
+                                <span className="text-2xl mb-1">{mode === AccommodationMode.BASE ? '🏠' : '🎒'}</span>
+                                <span className="font-semibold text-sm">{t.accommodations[mode].label}</span>
+                                <span className="text-[10px] opacity-75 leading-tight mt-1">{t.accommodations[mode].desc}</span>
+                             </button>
+                        ))}
+                    </div>
+                    {prefs.accommodationMode === AccommodationMode.BASE && (
+                         <div className="animate-fade-in">
+                             <label className="block text-xs font-semibold text-stone-500 mb-1 ml-1">{t.label_base_location}</label>
+                             <input 
+                                 type="text"
+                                 value={prefs.baseLocation}
+                                 onChange={handleBaseLocationChange}
+                                 placeholder="Ej. Amposta"
+                                 className="w-full bg-white border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 shadow-sm"
+                             />
+                         </div>
+                    )}
+                </div>
+            </section>
+        </div>
       </div>
 
       {/* Additional Info */}
       <section>
         <h3 className="text-lg font-semibold text-stone-800 mb-3 flex items-center gap-2">
-          <span className="bg-teal-100 text-teal-800 p-1.5 rounded-lg text-sm">4</span>
+          <span className="bg-teal-100 text-teal-800 p-1.5 rounded-lg text-sm">5</span>
           {t.section_4_title}
         </h3>
         <textarea

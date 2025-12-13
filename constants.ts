@@ -1,6 +1,5 @@
 
-
-import { Theme, Transport, Language } from './types';
+import { Theme, Transport, Language, AccommodationMode } from './types';
 
 export const THEME_ICONS: Record<Theme, string> = {
   [Theme.HISTORICAL]: '🏛️',
@@ -30,7 +29,9 @@ export const DEFAULT_PREFERENCES = {
   transport: Transport.WALKING,
   customTransports: [] as Transport[],
   startDate: '',
-  includeUpriver: false
+  includeUpriver: false,
+  accommodationMode: AccommodationMode.BASE,
+  baseLocation: 'Amposta'
 };
 
 // Map each POI to its specific Town/Area for grouping in the UI
@@ -151,6 +152,7 @@ interface Translation {
   section_1_title: string;
   section_2_title: string;
   section_3_title: string;
+  section_accommodation_title: string;
   section_4_title: string;
   section_pois_title: string;
   label_duration: string;
@@ -164,8 +166,10 @@ interface Translation {
   label_custom_selection: string;
   label_custom_transport_selection: string;
   label_pois_hint: string;
+  label_base_location: string;
   themes: Record<Theme, { label: string; desc: string }>;
   transports: Record<Transport, string>;
+  accommodations: Record<AccommodationMode, { label: string; desc: string }>;
   results: {
     itinerary_title: string;
     scheduled_date: string;
@@ -249,6 +253,7 @@ export const TRANSLATIONS: Record<Language, Translation> = {
     section_1_title: "Quina experiència busques?",
     section_2_title: "Durada i Data",
     section_3_title: "Transport",
+    section_accommodation_title: "Alojament",
     section_4_title: "Alguna cosa més? (Opcional)",
     section_pois_title: "Llocs específics i Pobles",
     label_duration: "DURADA",
@@ -262,6 +267,7 @@ export const TRANSLATIONS: Record<Language, Translation> = {
     label_custom_selection: "Selecciona els temes a combinar:",
     label_custom_transport_selection: "Selecciona els mitjans a combinar:",
     label_pois_hint: "Selecciona els llocs/pobles que VOLS visitar:",
+    label_base_location: "On tens l'hotel/casa?",
     themes: {
       [Theme.HISTORICAL]: { label: "Històric (Tortosa/Miravet/Amposta)", desc: "Catedrals, Castells Templers i Modernisme." },
       [Theme.CIVIL_WAR]: { label: "Guerra Civil (Corbera/Terra Alta)", desc: "Trinxeres, Poble Vell i espais de memòria." },
@@ -278,6 +284,10 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       [Transport.TRAIN]: "Tren (Rodalies/Mitja Distància)",
       [Transport.BIKE]: "Bicicleta / Via Verda",
       [Transport.MIX]: "Mix / Combinat"
+    },
+    accommodations: {
+        [AccommodationMode.BASE]: { label: "Camp Base (Fix)", desc: "Dormir sempre al mateix lloc." },
+        [AccommodationMode.ROUTE]: { label: "Ruta (Itinerant)", desc: "Dormir a diferents pobles." }
     },
     results: {
       itinerary_title: "El teu Itinerari",
@@ -359,7 +369,7 @@ Més enllà del Delta, les **Terres de l'Ebre** ofereixen un patrimoni excepcion
         title: "Consells Logístics",
         subtitle: "Horarios i Mobilitat",
         content: `
-*   **🕒 Horaris de Museus:** La majoria de museus i monuments (Castell de Miravet, Catedral de Tortosa) **TANQUEN ELS DILLUNS**. Planifica activitats de natura per als dilluns.
+*   **🕒 Horarios de Museus:** La majoria de museus i monuments (Castell de Miravet, Catedral de Tortosa) **TANQUEN ELS DILLUNS**. Planifica activitats de natura per als dilluns.
 *   **🚆 Tren i Bus:** L'estació de l'Aldea connecta amb Barcelona/València. Per moure's entre pobles (Tortosa-Amposta-La Ràpita), el bus HIFE és l'opció principal.
 *   **🛳️ Riu:** Els vaixells turístics tenen horaris estacionals. A l'hivern la freqüència baixa molt.
 *   **🍽️ Dinar:** A l'interior (Terra Alta/Ribera), els horaris de dinar són estrictes (13:30-15:00). Reserva sempre en cap de setmana.
@@ -385,6 +395,7 @@ Més enllà del Delta, les **Terres de l'Ebre** ofereixen un patrimoni excepcion
     section_1_title: "¿Qué experiencia buscas?",
     section_2_title: "Duración y Fecha",
     section_3_title: "Transporte",
+    section_accommodation_title: "Alojamiento",
     section_4_title: "¿Algo más? (Opcional)",
     section_pois_title: "Lugares específicos y Pueblos",
     label_duration: "DURACIÓN",
@@ -398,6 +409,7 @@ Més enllà del Delta, les **Terres de l'Ebre** ofereixen un patrimoni excepcion
     label_custom_selection: "Selecciona los temas a combinar:",
     label_custom_transport_selection: "Selecciona los medios a combinar:",
     label_pois_hint: "Selecciona los lugares/pueblos que QUIERES visitar:",
+    label_base_location: "¿Dónde tienes el hotel/casa?",
     themes: {
       [Theme.HISTORICAL]: { label: "Histórico (Tortosa/Miravet/Amposta)", desc: "Catedrales, Castillos Templarios y Modernismo." },
       [Theme.CIVIL_WAR]: { label: "Guerra Civil (Corbera/Terra Alta)", desc: "Trincheras, Pueblo Viejo y espacios de memoria." },
@@ -414,6 +426,10 @@ Més enllà del Delta, les **Terres de l'Ebre** ofereixen un patrimoni excepcion
       [Transport.TRAIN]: "Tren (Rodalies/Media Distancia)",
       [Transport.BIKE]: "Bicicleta / Vía Verde",
       [Transport.MIX]: "Mix / Combinado"
+    },
+    accommodations: {
+        [AccommodationMode.BASE]: { label: "Campo Base (Fijo)", desc: "Dormir siempre en el mismo sitio." },
+        [AccommodationMode.ROUTE]: { label: "Ruta (Itinerante)", desc: "Dormir en distintos pueblos." }
     },
     results: {
       itinerary_title: "Tu Itinerario",
@@ -521,6 +537,7 @@ Más allá del Delta, las **Terres de l'Ebre** ofrecen un patrimonio excepcional
     section_1_title: "What experience are you looking for?",
     section_2_title: "Duration & Date",
     section_3_title: "Transport",
+    section_accommodation_title: "Accommodation",
     section_4_title: "Anything else? (Optional)",
     section_pois_title: "Specific Places & Towns",
     label_duration: "DURATION",
@@ -534,6 +551,7 @@ Más allá del Delta, las **Terres de l'Ebre** ofrecen un patrimonio excepcional
     label_custom_selection: "Select themes to combine:",
     label_custom_transport_selection: "Select transport modes to combine:",
     label_pois_hint: "Select places/towns you WANT to visit:",
+    label_base_location: "Where is your hotel/base?",
     themes: {
       [Theme.HISTORICAL]: { label: "Historical (Tortosa/Miravet/Amposta)", desc: "Cathedrals, Templar Castles and Modernism." },
       [Theme.CIVIL_WAR]: { label: "Civil War (Corbera/Terra Alta)", desc: "Trenches, Old Town ruins and memory spaces." },
@@ -550,6 +568,10 @@ Más allá del Delta, las **Terres de l'Ebre** ofrecen un patrimonio excepcional
       [Transport.TRAIN]: "Train (Regional/Mid-distance)",
       [Transport.BIKE]: "Bicycle / Green Way",
       [Transport.MIX]: "Mix / Combined"
+    },
+    accommodations: {
+        [AccommodationMode.BASE]: { label: "Base Camp (Fixed)", desc: "Sleep in the same place every night." },
+        [AccommodationMode.ROUTE]: { label: "Touring Route", desc: "Sleep in different towns." }
     },
     results: {
       itinerary_title: "Your Itinerary",
