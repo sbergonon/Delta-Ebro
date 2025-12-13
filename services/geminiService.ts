@@ -3,12 +3,40 @@ import { UserPreferences, ItineraryResult, GroundingSource, ItineraryStep, Theme
 import { TRANSLATIONS } from "../constants";
 
 const getAiClient = () => {
-  const apiKey = process.env.API_KEY;
-  
-  if (!apiKey || apiKey === 'undefined' || apiKey.trim() === '') {
-      console.error("CRITICAL ERROR: API Key is missing.");
-      throw new Error("Configuration Error: API Key missing. Please set the environment variable 'API_KEY'.");
+  let apiKey = "";
+
+  // 1. Try process.env (Node/System standard, often polyfilled)
+  try {
+    if (typeof process !== 'undefined' && process.env) {
+      apiKey = process.env.API_KEY || process.env.VITE_API_KEY || "";
+    }
+  } catch (e) {
+    // Ignore reference errors
   }
+
+  // 2. Try import.meta.env (Vite standard)
+  if (!apiKey || apiKey === 'undefined') {
+    try {
+      // @ts-ignore
+      if (typeof import.meta !== 'undefined' && import.meta.env) {
+        // @ts-ignore
+        apiKey = import.meta.env.VITE_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "";
+      }
+    } catch (e) {
+      // Ignore reference errors
+    }
+  }
+
+  // Clean up potential string "undefined"
+  if (apiKey === 'undefined') apiKey = "";
+
+  if (!apiKey || apiKey.trim() === '') {
+      console.error("CRITICAL ERROR: API Key is missing in both process.env and import.meta.env");
+      throw new Error("Configuration Error: API Key missing. Please set 'VITE_API_KEY' in your Render Environment Variables.");
+  }
+
+  // Debug log to verify key is loaded (masked)
+  console.log(`Gemini Client Initialized. Key: ${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`);
 
   return new GoogleGenAI({ apiKey });
 };
@@ -34,9 +62,10 @@ async function retryOperation<T>(operation: () => Promise<T>, retries = 3, initi
       }
       
       // Handle API Key errors specifically
-      if (error.status === 400 && error.message?.includes('API key')) {
+      // Check for 400 Bad Request which often means invalid key, OR 403 which means permission denied
+      if ((error.status === 400 || error.status === 403) && (error.message?.includes('API key') || error.message?.includes('permission') || error.message?.includes('valid'))) {
           console.error("API Key Error Details:", error);
-          throw new Error("Error de API Key (400): La clave no es válida. Asegúrate de que la variable de entorno 'API_KEY' esté configurada correctamente.");
+          throw new Error("Error de API Key (400/403): La clave no es válida o ha sido rechazada por Google. Verifica que la variable 'VITE_API_KEY' en Render sea correcta y no tenga espacios extra.");
       }
 
       throw error;
@@ -104,7 +133,6 @@ export const generateStepInstructions = async (title: string, description: strin
                 contents: prompt,
                 config: {
                     temperature: 0.3,
-                    // Removed maxOutputTokens to allow model flexibility
                 }
             });
 
