@@ -5,8 +5,17 @@ import { UserPreferences, ItineraryResult, GroundingSource, ItineraryStep, Theme
 import { TRANSLATIONS } from "../constants";
 
 const getAiClient = () => {
+  const apiKey = process.env.API_KEY;
+  
+  // Check if key is missing or looks like a placeholder
+  if (!apiKey || apiKey === 'undefined' || apiKey.trim() === '') {
+      console.error("CRITICAL ERROR: API_KEY is missing.");
+      console.error("HINT: If you are using Render/Vercel, ensure the variable name is exactly 'API_KEY'. If you named it 'VITE_GEMINI_API_KEY', please rename it.");
+      throw new Error("Configuration Error: API Key is missing. Please check your Environment Variables (must be named 'API_KEY').");
+  }
+
   // @ts-ignore
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  return new GoogleGenAI({ apiKey });
 };
 
 // Helper function to retry operations on 503 (Overloaded) errors
@@ -28,6 +37,13 @@ async function retryOperation<T>(operation: () => Promise<T>, retries = 3, initi
       if (isOverloaded) {
          throw new Error("El servidor de IA está saturado en este momento (Error 503). Por favor, inténtalo de nuevo en unos segundos.");
       }
+      
+      // Handle API Key errors specifically
+      if (error.status === 400 && error.message?.includes('API key')) {
+          console.error("API Key Error Details:", error);
+          throw new Error("Error de API Key (400): La clave no es válida o no se ha encontrado. Asegúrate de que la variable de entorno se llame 'API_KEY' en Render.");
+      }
+
       throw error;
     }
   }
