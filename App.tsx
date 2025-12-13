@@ -1,6 +1,8 @@
+
+
 import React, { useState, useEffect } from 'react';
-import { UserPreferences, ItineraryResult, Language } from './types';
-import { DEFAULT_PREFERENCES, TRANSLATIONS } from './constants';
+import { UserPreferences, ItineraryResult, Language, SavedItinerary } from './types';
+import { DEFAULT_PREFERENCES, TRANSLATIONS, THEME_ICONS } from './constants';
 import { generateItinerary } from './services/geminiService';
 import PreferenceSelector from './components/PreferenceSelector';
 import ResultDisplay from './components/ResultDisplay';
@@ -11,6 +13,8 @@ const App: React.FC = () => {
   const [result, setResult] = useState<ItineraryResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSavedTrips, setShowSavedTrips] = useState(false);
+  const [savedTrips, setSavedTrips] = useState<SavedItinerary[]>([]);
 
   const t = TRANSLATIONS[preferences.language];
 
@@ -22,7 +26,6 @@ const App: React.FC = () => {
         try {
             const json = decodeURIComponent(atob(shareParam));
             const sharedPrefs = JSON.parse(json);
-            // Ensure shared prefs have a valid language or default to 'ca'
             if (!sharedPrefs.language) sharedPrefs.language = 'ca';
             setPreferences(sharedPrefs);
             
@@ -37,6 +40,14 @@ const App: React.FC = () => {
             console.error("Error parsing shared url", e);
             setError("Link broken");
         }
+    }
+    
+    // Load saved trips from local storage
+    const loadedTrips = localStorage.getItem('amposta_explorer_trips');
+    if (loadedTrips) {
+        try {
+            setSavedTrips(JSON.parse(loadedTrips));
+        } catch (e) { console.error("Error loading trips", e); }
     }
   }, []);
 
@@ -62,25 +73,61 @@ const App: React.FC = () => {
     setPreferences(prev => ({ ...prev, language: lang }));
   };
 
+  const handleDeleteTrip = (id: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      const updated = savedTrips.filter(trip => trip.id !== id);
+      setSavedTrips(updated);
+      localStorage.setItem('amposta_explorer_trips', JSON.stringify(updated));
+  };
+
+  const handleLoadTrip = (trip: SavedItinerary) => {
+      setPreferences(trip.preferences);
+      setResult(trip.result);
+      setShowSavedTrips(false);
+  };
+
+  const handleSaveTrip = () => {
+      if (!result) return;
+      const newTrip: SavedItinerary = {
+          id: Date.now().toString(),
+          name: `${t.themes[preferences.theme].label.split(' ')[0]} - ${preferences.duration} ${t.label_days}`,
+          createdAt: Date.now(),
+          preferences: preferences,
+          result: result
+      };
+      const updated = [newTrip, ...savedTrips];
+      setSavedTrips(updated);
+      localStorage.setItem('amposta_explorer_trips', JSON.stringify(updated));
+      return true; // signal success
+  };
+
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col font-sans">
       
       {/* Navbar */}
-      <header className="bg-white border-b border-stone-200 sticky top-0 z-30 print:hidden">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      <header className="bg-white border-b border-stone-200 sticky top-0 z-30 print:hidden shadow-sm">
+        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={handleReset}>
             <span className="text-2xl">🌾</span>
-            <h1 className="font-bold text-xl tracking-tight text-stone-800">
+            <h1 className="font-bold text-lg sm:text-xl tracking-tight text-stone-800 leading-none">
               Amposta<span className="text-teal-600">Explorer</span>
             </h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+             <button 
+                onClick={() => setShowSavedTrips(true)}
+                className="text-xs font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+             >
+                <span className="hidden sm:inline">{t.saved_trips_btn}</span>
+                <span className="sm:hidden">📂</span>
+             </button>
+
              <div className="flex bg-stone-100 p-1 rounded-lg">
                 {(['ca', 'es', 'en'] as Language[]).map(lang => (
                   <button
                     key={lang}
                     onClick={() => handleLanguageChange(lang)}
-                    className={`text-xs font-bold px-2 py-1 rounded-md transition-all uppercase ${
+                    className={`text-[10px] sm:text-xs font-bold px-2 py-1 rounded-md transition-all uppercase ${
                       preferences.language === lang 
                       ? 'bg-white text-teal-600 shadow-sm' 
                       : 'text-stone-400 hover:text-stone-600'
@@ -90,79 +137,52 @@ const App: React.FC = () => {
                   </button>
                 ))}
              </div>
-             <div className="text-xs font-medium bg-teal-50 text-teal-700 px-2 py-1 rounded hidden sm:block">
-                {t.beta}
-             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow w-full max-w-3xl mx-auto px-4 sm:px-6 py-8">
+      <main className="flex-grow w-full max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         
         {error && (
           <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r shadow-sm overflow-x-auto">
-            <div className="flex items-start">
-              <div className="flex-shrink-0 mt-0.5">
-                <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3 w-full">
-                <pre className="text-sm text-red-700 whitespace-pre-wrap font-sans break-words">{error}</pre>
-              </div>
-            </div>
+             <pre className="text-sm text-red-700 whitespace-pre-wrap font-sans">{error}</pre>
           </div>
         )}
 
         {!result ? (
           <div className="space-y-8 animate-fade-in">
             {/* Hero Section */}
-            <div className="text-center space-y-4 mb-10">
+            <div className="text-center space-y-4 mb-8">
               <h2 className="text-3xl md:text-4xl font-extrabold text-stone-900 tracking-tight">
                 {t.title} <span className="text-teal-600">Explorer</span>
               </h2>
-              <p className="text-lg text-stone-600 max-w-xl mx-auto">
+              <p className="text-lg text-stone-600 max-w-xl mx-auto leading-relaxed">
                 {t.subtitle}
               </p>
             </div>
 
-            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xl shadow-stone-200/50 border border-stone-100">
+            <div className="bg-white p-5 md:p-8 rounded-2xl shadow-xl shadow-stone-200/50 border border-stone-100">
                <PreferenceSelector prefs={preferences} onChange={setPreferences} />
                
-               <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
+               <div className="mt-8 pt-6 border-t border-slate-100">
                  <Button 
                     onClick={handleGenerate} 
                     isLoading={loading}
-                    className="w-full sm:w-auto text-lg shadow-xl"
+                    className="w-full text-lg shadow-xl py-4"
                   >
                     {loading ? t.generating_btn : t.generate_btn}
                  </Button>
                </div>
             </div>
-            
-            {/* Features Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mt-12 opacity-70">
-                <div className="p-4">
-                    <div className="text-2xl mb-2">🏰</div>
-                    <div className="text-sm font-semibold">{t.themes.historical.label}</div>
-                </div>
-                <div className="p-4">
-                    <div className="text-2xl mb-2">🥘</div>
-                    <div className="text-sm font-semibold">{t.themes.gastronomic.label}</div>
-                </div>
-                 <div className="p-4">
-                    <div className="text-2xl mb-2">🦩</div>
-                    <div className="text-sm font-semibold">{t.themes.nature.label}</div>
-                </div>
-                 <div className="p-4">
-                    <div className="text-2xl mb-2">🚌</div>
-                    <div className="text-sm font-semibold">{t.transports.bus}</div>
-                </div>
-            </div>
           </div>
         ) : (
-          <ResultDisplay result={result} preferences={preferences} onReset={handleReset} />
+          <ResultDisplay 
+             result={result} 
+             preferences={preferences} 
+             onReset={handleReset} 
+             onSave={handleSaveTrip}
+          />
         )}
 
       </main>
@@ -171,9 +191,60 @@ const App: React.FC = () => {
       <footer className="bg-white border-t border-stone-200 py-8 mt-auto print:hidden">
         <div className="max-w-3xl mx-auto px-4 text-center text-stone-400 text-sm">
           <p>© {new Date().getFullYear()} Amposta Explorer. Powered by Google Gemini.</p>
-          <p className="mt-2 text-xs">{t.results.verify_warning}</p>
         </div>
       </footer>
+
+      {/* Saved Trips Modal */}
+      {showSavedTrips && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col animate-fade-in-up">
+                 <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
+                    <h3 className="font-bold text-lg text-stone-800">{t.saved_trips_title}</h3>
+                    <button onClick={() => setShowSavedTrips(false)} className="text-slate-400 hover:text-stone-600 p-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                 </div>
+                 
+                 <div className="overflow-y-auto p-4 space-y-3 flex-1">
+                     {savedTrips.length === 0 ? (
+                         <div className="text-center py-8 text-stone-400">
+                             <span className="text-4xl block mb-2">📂</span>
+                             {t.no_saved_trips}
+                         </div>
+                     ) : (
+                         savedTrips.map(trip => (
+                             <div key={trip.id} onClick={() => handleLoadTrip(trip)} className="p-3 border border-slate-200 rounded-lg hover:border-teal-400 hover:bg-teal-50 cursor-pointer transition-all group relative">
+                                 <div className="flex justify-between items-start">
+                                     <div>
+                                         <div className="font-bold text-stone-800 flex items-center gap-2">
+                                             <span>{THEME_ICONS[trip.preferences.theme]}</span>
+                                             {trip.name}
+                                         </div>
+                                         <div className="text-xs text-stone-500 mt-1">
+                                             {new Date(trip.createdAt).toLocaleDateString()}
+                                         </div>
+                                     </div>
+                                 </div>
+                                 <button 
+                                     onClick={(e) => handleDeleteTrip(trip.id, e)}
+                                     className="absolute top-3 right-3 text-slate-300 hover:text-red-500 p-1"
+                                     title={t.delete_btn}
+                                 >
+                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                 </button>
+                             </div>
+                         ))
+                     )}
+                 </div>
+                 
+                 <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-xl">
+                     <button onClick={() => setShowSavedTrips(false)} className="w-full py-2 text-sm font-bold text-stone-600 hover:bg-stone-200 rounded-lg transition-colors">
+                         Cerrar
+                     </button>
+                 </div>
+             </div>
+          </div>
+      )}
     </div>
   );
 };

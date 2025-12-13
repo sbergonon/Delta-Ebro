@@ -141,6 +141,12 @@ interface Translation {
   share_btn: string;
   email_btn: string;
   pdf_btn: string;
+  save_btn: string;
+  saved_trips_btn: string;
+  saved_trips_title: string;
+  no_saved_trips: string;
+  load_btn: string;
+  delete_btn: string;
   create_new_btn: string;
   section_1_title: string;
   section_2_title: string;
@@ -205,6 +211,7 @@ interface Translation {
     no_nearby_found: string;
     copy_step: string;
     copied: string;
+    saved_success: string;
   };
   errors: {
     generic: string;
@@ -229,10 +236,16 @@ export const TRANSLATIONS: Record<Language, Translation> = {
     beta: "Beta AI",
     generate_btn: "Generar Ruta",
     generating_btn: "Planificant...",
-    share_btn: "Copiar Enllaç",
-    email_btn: "Enviar per Email",
-    pdf_btn: "Guardar PDF",
-    create_new_btn: "Crear-ne un altre",
+    share_btn: "Compartir",
+    email_btn: "Email",
+    pdf_btn: "PDF",
+    save_btn: "Guardar",
+    saved_trips_btn: "Els meus Viatges",
+    saved_trips_title: "Viatges Guardats",
+    no_saved_trips: "Encara no tens viatges guardats.",
+    load_btn: "Carregar",
+    delete_btn: "Esborrar",
+    create_new_btn: "Nou Viatge",
     section_1_title: "Quina experiència busques?",
     section_2_title: "Durada i Data",
     section_3_title: "Transport",
@@ -287,9 +300,9 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       detected_places: "Puntos d'interès detectats",
       verified_sources: "Fonts Web Verificades",
       view_map: "Veure a l'app",
-      verify_btn: "Verificar info",
+      verify_btn: "Verificar",
       directions_btn: "Com arribar",
-      add_note_btn: "Afegir nota",
+      add_note_btn: "Nota",
       edit_note_btn: "Editar nota",
       save_note: "Guardar",
       cancel_note: "Cancel·lar",
@@ -304,21 +317,22 @@ export const TRANSLATIONS: Record<Language, Translation> = {
         [Transport.BIKE]: "Bici",
         [Transport.MIX]: "Combinat"
       },
-      view_booking_btn: "Reservar Activitat",
-      generate_image_btn: "Generar Imatge AI",
+      view_booking_btn: "Reservar",
+      generate_image_btn: "Imatge AI",
       generating_image: "Generant...",
-      check_bus_stop: "Veure parada bus",
-      check_river_pier: "Veure embarcador",
-      special_event: "Esdeveniment Especial",
+      check_bus_stop: "Bus",
+      check_river_pier: "Embarcador",
+      special_event: "Esdeveniment",
       step_by_step_btn: "Guia Pas a Pas",
       loading_instructions: "Generant passos...",
       instructions_title: "Com fer aquesta activitat:",
-      nearby_attractions_btn: "A prop d'aquí",
+      nearby_attractions_btn: "A prop",
       loading_nearby: "Buscant llocs...",
       nearby_title: "També a prop (1km):",
       no_nearby_found: "No s'han trobat llocs destacats a prop.",
       copy_step: "Copiar",
-      copied: "Copiat!"
+      copied: "Copiat!",
+      saved_success: "Viatge guardat correctament!"
     },
     errors: {
       generic: "S'ha produït un error inesperat.",
@@ -343,7 +357,7 @@ Més enllà del Delta, les **Terres de l'Ebre** ofereixen un patrimoni excepcion
     },
     travel_tips: {
         title: "Consells Logístics",
-        subtitle: "Horaris i Mobilitat",
+        subtitle: "Horarios i Mobilitat",
         content: `
 *   **🕒 Horaris de Museus:** La majoria de museus i monuments (Castell de Miravet, Catedral de Tortosa) **TANQUEN ELS DILLUNS**. Planifica activitats de natura per als dilluns.
 *   **🚆 Tren i Bus:** L'estació de l'Aldea connecta amb Barcelona/València. Per moure's entre pobles (Tortosa-Amposta-La Ràpita), el bus HIFE és l'opció principal.
@@ -358,10 +372,16 @@ Més enllà del Delta, les **Terres de l'Ebre** ofereixen un patrimoni excepcion
     beta: "Beta AI",
     generate_btn: "Generar Ruta",
     generating_btn: "Planificando...",
-    share_btn: "Copiar Enlace",
-    email_btn: "Enviar por Email",
-    pdf_btn: "Guardar PDF",
-    create_new_btn: "Crear otro",
+    share_btn: "Compartir",
+    email_btn: "Email",
+    pdf_btn: "PDF",
+    save_btn: "Guardar",
+    saved_trips_btn: "Mis Viajes",
+    saved_trips_title: "Viajes Guardados",
+    no_saved_trips: "Aún no tienes viajes guardados.",
+    load_btn: "Cargar",
+    delete_btn: "Borrar",
+    create_new_btn: "Nuevo Viaje",
     section_1_title: "¿Qué experiencia buscas?",
     section_2_title: "Duración y Fecha",
     section_3_title: "Transporte",
@@ -416,9 +436,9 @@ Més enllà del Delta, les **Terres de l'Ebre** ofereixen un patrimoni excepcion
       detected_places: "Puntos de interés detectados",
       verified_sources: "Fuentes Web Verificadas",
       view_map: "Ver en app",
-      verify_btn: "Verificar info",
+      verify_btn: "Verificar",
       directions_btn: "Cómo llegar",
-      add_note_btn: "Añadir nota",
+      add_note_btn: "Nota",
       edit_note_btn: "Editar nota",
       save_note: "Guardar",
       cancel_note: "Cancelar",
@@ -433,21 +453,22 @@ Més enllà del Delta, les **Terres de l'Ebre** ofereixen un patrimoni excepcion
         [Transport.BIKE]: "Bici",
         [Transport.MIX]: "Combinado"
       },
-      view_booking_btn: "Reservar Actividad",
-      generate_image_btn: "Generar Imagen AI",
+      view_booking_btn: "Reservar",
+      generate_image_btn: "Imagen AI",
       generating_image: "Generando...",
-      check_bus_stop: "Ver parada bus",
-      check_river_pier: "Ver embarcadero",
-      special_event: "Evento Especial",
+      check_bus_stop: "Bus",
+      check_river_pier: "Embarcadero",
+      special_event: "Evento",
       step_by_step_btn: "Paso a Paso",
       loading_instructions: "Generando guía...",
       instructions_title: "Cómo realizar esta actividad:",
-      nearby_attractions_btn: "Cerca de aquí",
+      nearby_attractions_btn: "Cerca",
       loading_nearby: "Buscando lugares...",
       nearby_title: "También cerca (1km):",
       no_nearby_found: "No se han encontrado lugares destacados cerca.",
       copy_step: "Copiar",
-      copied: "¡Copiado!"
+      copied: "¡Copiado!",
+      saved_success: "¡Viaje guardado correctamente!"
     },
     errors: {
       generic: "Ocurrió un error inesperado.",
@@ -487,10 +508,16 @@ Más allá del Delta, las **Terres de l'Ebre** ofrecen un patrimonio excepcional
     beta: "Beta AI",
     generate_btn: "Generate Route",
     generating_btn: "Planning...",
-    share_btn: "Copy Link",
-    email_btn: "Send via Email",
-    pdf_btn: "Save as PDF",
-    create_new_btn: "Create new",
+    share_btn: "Share",
+    email_btn: "Email",
+    pdf_btn: "PDF",
+    save_btn: "Save",
+    saved_trips_btn: "My Trips",
+    saved_trips_title: "Saved Trips",
+    no_saved_trips: "No saved trips yet.",
+    load_btn: "Load",
+    delete_btn: "Delete",
+    create_new_btn: "New Trip",
     section_1_title: "What experience are you looking for?",
     section_2_title: "Duration & Date",
     section_3_title: "Transport",
@@ -545,9 +572,9 @@ Más allá del Delta, las **Terres de l'Ebre** ofrecen un patrimonio excepcional
       detected_places: "Detected Points of Interest",
       verified_sources: "Verified Web Sources",
       view_map: "View in app",
-      verify_btn: "Verify info",
-      directions_btn: "Get directions",
-      add_note_btn: "Add note",
+      verify_btn: "Verify",
+      directions_btn: "Directions",
+      add_note_btn: "Note",
       edit_note_btn: "Edit note",
       save_note: "Save",
       cancel_note: "Cancel",
@@ -562,12 +589,12 @@ Más allá del Delta, las **Terres de l'Ebre** ofrecen un patrimonio excepcional
         [Transport.BIKE]: "Bike",
         [Transport.MIX]: "Combined"
       },
-      view_booking_btn: "Book Activity",
-      generate_image_btn: "Generate AI Image",
+      view_booking_btn: "Book",
+      generate_image_btn: "AI Image",
       generating_image: "Generating...",
-      check_bus_stop: "Check bus stop",
-      check_river_pier: "Check river pier",
-      special_event: "Special Event",
+      check_bus_stop: "Bus",
+      check_river_pier: "Pier",
+      special_event: "Event",
       step_by_step_btn: "Step-by-step",
       loading_instructions: "Generating guide...",
       instructions_title: "How to do this activity:",
@@ -576,7 +603,8 @@ Más allá del Delta, las **Terres de l'Ebre** ofrecen un patrimonio excepcional
       nearby_title: "Also nearby (1km):",
       no_nearby_found: "No major attractions found nearby.",
       copy_step: "Copy",
-      copied: "Copied!"
+      copied: "Copied!",
+      saved_success: "Trip saved successfully!"
     },
     errors: {
       generic: "An unexpected error occurred.",

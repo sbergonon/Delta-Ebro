@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { ItineraryStep, Transport, Theme, Language, NearbyAttraction } from '../types';
+import { ItineraryStep, Transport, Theme, Language } from '../types';
 import { THEME_ICONS, TRANSLATIONS } from '../constants';
 
 interface ItineraryStepCardProps {
@@ -34,7 +34,7 @@ const THEME_GRADIENTS: Record<Theme, string> = {
   [Theme.CUSTOM]: 'bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100',
 };
 
-// Heuristic to detect specific themes within steps (useful for Mixed/Custom itineraries)
+// Heuristic to detect specific themes within steps
 const getEffectiveTheme = (step: ItineraryStep, globalTheme: Theme): Theme => {
   const text = (step.title + ' ' + step.description).toLowerCase();
   
@@ -49,7 +49,6 @@ const getEffectiveTheme = (step: ItineraryStep, globalTheme: Theme): Theme => {
 
 // Helper to clean title for Maps search queries
 const cleanTitleForSearch = (title: string) => {
-    // Common tourism verbs in EN, ES, CA to strip for cleaner map searches
     const verbs = [
         "Visit", "Tour", "Discover", "Explore", "Walk to", "Check-in at", "See", "View",
         "Visita", "Visitar", "Ver", "Descubrir", "Explorar", "Caminar a", "Paseo por", "Ir a", "Ruta por", "Excursión a",
@@ -59,7 +58,7 @@ const cleanTitleForSearch = (title: string) => {
     
     return title
         .replace(verbRegex, '') 
-        .replace(/[:()].*$/, '') // Remove subtitles in parens/after colon
+        .replace(/[:()].*$/, '') 
         .trim();
 };
 
@@ -92,18 +91,14 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
   const [isLoadingNearby, setIsLoadingNearby] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Ref to track if we have already attempted to regenerate this image to avoid loops
   const hasRetriedGeneration = useRef(false);
-
   const t = TRANSLATIONS[language];
 
-  // Reset image error state when image URL changes (e.g. new generated image arrives)
   useEffect(() => {
       setImgError(false);
       hasRetriedGeneration.current = false;
   }, [step.imageUrl]);
 
-  // Reset loading states when step data updates
   useEffect(() => {
       if (step.detailedInstructions) setIsGeneratingInstructions(false);
       if (step.nearbyAttractions) setIsLoadingNearby(false);
@@ -113,21 +108,13 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
 
   let travelMode = 'driving';
   switch (transport) {
-    case Transport.WALKING:
-      travelMode = 'walking';
-      break;
+    case Transport.WALKING: travelMode = 'walking'; break;
     case Transport.BUS:
     case Transport.TRAIN:
-    case Transport.MIX: // Mixed transport often implies public transit or complex routing
-      travelMode = 'transit';
-      break;
-    case Transport.BIKE:
-      travelMode = 'bicycling';
-      break;
+    case Transport.MIX: travelMode = 'transit'; break;
+    case Transport.BIKE: travelMode = 'bicycling'; break;
     case Transport.RIVER:
-    case Transport.CAR:
-      travelMode = 'driving';
-      break;
+    case Transport.CAR: travelMode = 'driving'; break;
   }
 
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${step.title}, Tarragona`)}&travelmode=${travelMode}`;
@@ -137,11 +124,9 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
   const placeholderGradient = THEME_GRADIENTS[effectiveTheme] || THEME_GRADIENTS[Theme.CUSTOM];
   const placeholderIcon = THEME_ICONS[effectiveTheme] || '🗺️';
   
-  // Heuristic for "Bookable" steps
   const isBookable = (() => {
     const title = step.title.toLowerCase();
     const desc = step.description.toLowerCase();
-
     if (title.includes('check-in') || title.includes('check-out') || title.includes('esmorzar') || title.includes('desayuno') || title.includes('breakfast')) return false;
 
     const keywords = [
@@ -154,7 +139,6 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
         'parc', 'parque', 'park', 'jardí', 'jardin', 'garden',
         'activitat', 'actividad', 'activity', 'món natura', 'mon natura'
     ];
-
     if (keywords.some(k => title.includes(k) || desc.includes(k))) return true;
     if (hasDirectBooking) return true;
     return false;
@@ -188,9 +172,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
           setAreInstructionsOpen(!areInstructionsOpen);
           return;
       }
-      
       if (!onGenerateInstructions || isGeneratingInstructions) return;
-      
       setIsGeneratingInstructions(true);
       setAreInstructionsOpen(true);
       await onGenerateInstructions(step.id);
@@ -202,9 +184,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
           setAreNearbyOpen(!areNearbyOpen);
           return;
       }
-
       if (!onFetchNearby || isLoadingNearby) return;
-
       setIsLoadingNearby(true);
       setAreNearbyOpen(true);
       onFetchNearby();
@@ -231,20 +211,20 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
     <>
       <div className={containerClasses}>
         
-        {/* Time/Day Indicator */}
-        <div className="bg-slate-50 border-b md:border-b-0 md:border-r border-slate-200 p-4 md:w-32 flex flex-row md:flex-col items-center md:justify-center justify-between gap-2 text-center shrink-0">
-          <div className="flex flex-col">
-             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t.results.day}</span>
-             <span className="text-2xl font-black text-slate-700">{step.day}</span>
-          </div>
-          <div className="h-px w-8 bg-slate-300 hidden md:block"></div>
-          <span className="text-sm font-semibold text-teal-600 bg-teal-50 px-2 py-1 rounded-md">
-            {step.timeOfDay}
-          </span>
-        </div>
+        {/* MOBILE LAYOUT: Image Top, Info Below */}
+        {/* DESKTOP LAYOUT: Image Right */}
 
-        {/* Image Section */}
-        <div className={`relative h-72 md:h-auto md:w-5/12 lg:w-2/5 shrink-0 overflow-hidden border-b md:border-b-0 md:border-r border-slate-200 ${!hasImage ? placeholderGradient : 'bg-slate-100'}`}>
+        {/* 1. Image Section (Top on mobile, Right on desktop) */}
+        {/* We use 'order-first' md:order-last' to flip logic if needed, but structure here is clearer if image is first in DOM for mobile stack, adjusted via flex-row-reverse if needed. Current: flex-col md:flex-row implies Left (Info) Right (Image) usually, let's stick to standard flow. */}
+        
+        <div className={`relative h-48 md:h-auto md:w-5/12 lg:w-2/5 shrink-0 overflow-hidden border-b md:border-b-0 md:border-r border-slate-200 ${!hasImage ? placeholderGradient : 'bg-slate-100'} order-1 md:order-2`}>
+            {/* Mobile-only Day Badge */}
+            <div className="absolute top-3 left-3 z-20 bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg shadow-sm border border-slate-100 md:hidden flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 uppercase">{t.results.day} {step.day}</span>
+                <span className="w-1 h-4 bg-slate-300"></span>
+                <span className="text-xs font-bold text-teal-600">{step.timeOfDay}</span>
+            </div>
+
             {hasImage ? (
                 <div className="w-full h-full relative group-hover:scale-[1.02] transition-transform duration-700 ease-out">
                   <img 
@@ -252,9 +232,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                       alt={step.title}
                       className="w-full h-full object-cover"
                       onError={() => {
-                        console.warn(`Image load error for ${step.title}.`);
                         setImgError(true);
-                        // Prevent infinite loops: only retry once automatically
                         if (onGenerateImage && !hasRetriedGeneration.current && step.imageUrl && !step.imageUrl.startsWith('data:')) {
                             hasRetriedGeneration.current = true;
                             onGenerateImage(step.id);
@@ -269,31 +247,17 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                   onClick={!isGenerating && onGenerateImage ? handleGenerateClick : undefined}
                   className={`w-full h-full flex flex-col items-center justify-center relative overflow-hidden p-8 group/placeholder transition-colors ${onGenerateImage ? 'cursor-pointer hover:bg-slate-50' : ''}`}
                 >
-                   <div className="absolute top-[-10%] right-[-10%] w-32 h-32 bg-white/40 rounded-full blur-2xl"></div>
-                   <div className="absolute bottom-[-10%] left-[-10%] w-32 h-32 bg-black/5 rounded-full blur-2xl"></div>
-                   
-                   <span className="relative z-10 text-7xl md:text-8xl lg:text-9xl filter drop-shadow-md transform group-hover/placeholder:scale-110 transition-transform duration-500 select-none opacity-90" aria-hidden="true">
+                   <span className="relative z-10 text-6xl md:text-8xl filter drop-shadow-md transform group-hover/placeholder:scale-110 transition-transform duration-500 select-none opacity-90" aria-hidden="true">
                      {placeholderIcon}
                    </span>
-
                    {onGenerateImage && (
                        <div className="absolute inset-0 flex items-center justify-center bg-white/30 backdrop-blur-[2px] opacity-0 group-hover/placeholder:opacity-100 transition-all duration-300 z-20">
                            <button 
                              onClick={(e) => handleGenerateClick(e)}
                              disabled={isGenerating}
-                             className="bg-white text-teal-700 hover:text-teal-800 hover:scale-105 transform transition-all shadow-xl rounded-full px-5 py-3 font-bold text-sm flex items-center gap-2 border border-teal-100"
+                             className="bg-white text-teal-700 hover:text-teal-800 hover:scale-105 transform transition-all shadow-xl rounded-full px-4 py-2 font-bold text-xs flex items-center gap-2 border border-teal-100"
                            >
-                             {isGenerating ? (
-                                 <>
-                                   <svg className="animate-spin h-4 w-4 text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                   {t.results.generating_image}
-                                 </>
-                             ) : (
-                                 <>
-                                   <span>✨</span>
-                                   {t.results.generate_image_btn}
-                                 </>
-                             )}
+                             {isGenerating ? t.results.generating_image : t.results.generate_image_btn}
                            </button>
                        </div>
                    )}
@@ -301,18 +265,27 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
             )}
         </div>
 
-        {/* Content */}
-        <div className="p-6 flex-grow min-w-0 flex flex-col justify-between">
+        {/* 2. Desktop Time/Day Indicator (Hidden on mobile) */}
+        <div className="hidden md:flex bg-slate-50 border-r border-slate-200 p-4 w-24 flex-col items-center justify-center gap-2 text-center shrink-0 order-1">
+             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t.results.day}</span>
+             <span className="text-2xl font-black text-slate-700">{step.day}</span>
+             <div className="h-px w-8 bg-slate-300 my-2"></div>
+             <span className="text-xs font-semibold text-teal-600 bg-teal-50 px-2 py-1 rounded-md writing-mode-vertical">
+                {step.timeOfDay}
+             </span>
+        </div>
+
+        {/* 3. Content */}
+        <div className="p-5 flex-grow min-w-0 flex flex-col justify-between order-3">
           <div>
-            <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
-              <h3 className="text-xl font-bold text-stone-800 leading-tight group-hover:text-teal-700 transition-colors">
+            <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+              <h3 className="text-lg md:text-xl font-bold text-stone-800 leading-tight group-hover:text-teal-700 transition-colors">
                 {step.title}
               </h3>
               {isSpecialEvent && (
-                <div className="shrink-0 inline-flex items-center gap-1.5 bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-200 text-xs font-bold px-3 py-1.5 rounded-md shadow-sm">
-                  <span>📅</span>
-                  <span className="uppercase tracking-wide">{t.results.special_event}</span>
-                </div>
+                <span className="shrink-0 bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-200 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm uppercase tracking-wide">
+                   {t.results.special_event}
+                </span>
               )}
             </div>
 
@@ -325,9 +298,9 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                     e.stopPropagation();
                     onRate && onRate(star);
                   }}
-                  className={`text-xl focus:outline-none transition-all duration-200 transform hover:scale-110 ${
+                  className={`text-xl focus:outline-none transition-all duration-200 ${
                     star <= (userRating || 0) 
-                      ? 'text-amber-400 drop-shadow-sm' 
+                      ? 'text-amber-400' 
                       : 'text-slate-200 hover:text-amber-200'
                   }`}
                 >
@@ -340,8 +313,6 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
               <ReactMarkdown
                 components={{
                     p: ({node, ...props}) => <p className="mb-2" {...props} />,
-                    ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-2 space-y-1" {...props} />,
-                    li: ({node, ...props}) => <li className="" {...props} />,
                     strong: ({node, ...props}) => <span className="font-semibold text-teal-700" {...props} />,
                 }}
               >
@@ -349,146 +320,86 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
               </ReactMarkdown>
             </div>
 
-            {/* Detailed Instructions Section */}
-            {areInstructionsOpen && (
-                <div className="mt-4 p-4 bg-teal-50 border border-teal-100 rounded-lg animate-fade-in text-sm text-stone-700">
-                    <h4 className="font-bold text-teal-800 mb-2 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                        {t.results.instructions_title}
-                    </h4>
-                    {isGeneratingInstructions ? (
-                        <div className="flex items-center gap-2 text-teal-600 italic">
-                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            {t.results.loading_instructions}
+            {/* Expandable Sections */}
+            {(areInstructionsOpen || areNearbyOpen || step.userNotes) && (
+                <div className="space-y-3 mt-4">
+                    {/* Instructions */}
+                    {areInstructionsOpen && (
+                        <div className="p-3 bg-teal-50 border border-teal-100 rounded-lg animate-fade-in text-sm text-stone-700">
+                            <h4 className="font-bold text-teal-800 mb-2 flex items-center gap-2 text-xs uppercase tracking-wide">
+                                {t.results.instructions_title}
+                            </h4>
+                            {isGeneratingInstructions ? (
+                                <div className="text-teal-600 italic text-xs">{t.results.loading_instructions}</div>
+                            ) : (
+                                step.detailedInstructions && (
+                                    <ul className="list-decimal pl-4 space-y-1">
+                                        {step.detailedInstructions.map((instruction, i) => (
+                                            <li key={i}>{instruction}</li>
+                                        ))}
+                                    </ul>
+                                )
+                            )}
                         </div>
-                    ) : (
-                        step.detailedInstructions && (
-                            <ul className="list-decimal pl-5 space-y-1">
-                                {step.detailedInstructions.map((instruction, i) => (
-                                    <li key={i}>{instruction}</li>
-                                ))}
-                            </ul>
-                        )
+                    )}
+                    {/* Nearby */}
+                    {areNearbyOpen && (
+                        <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg animate-fade-in text-sm text-stone-700">
+                             <h4 className="font-bold text-indigo-800 mb-2 flex items-center gap-2 text-xs uppercase tracking-wide">
+                                {t.results.nearby_title}
+                            </h4>
+                            {isLoadingNearby ? (
+                                <div className="text-indigo-600 italic text-xs">{t.results.loading_nearby}</div>
+                            ) : (
+                                step.nearbyAttractions && step.nearbyAttractions.length > 0 ? (
+                                    <ul className="space-y-2">
+                                        {step.nearbyAttractions.map((attraction, i) => (
+                                            <li key={i} className="flex justify-between items-center bg-white p-2 rounded border border-indigo-100 text-xs">
+                                                <span className="font-semibold text-indigo-900">{attraction.name}</span>
+                                                <span className="bg-indigo-50 px-1.5 py-0.5 rounded text-indigo-600 ml-2 whitespace-nowrap">{attraction.distance}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="italic text-indigo-600 text-xs">{t.results.no_nearby_found}</p>
+                                )
+                            )}
+                        </div>
+                    )}
+                    {/* Notes */}
+                    {step.userNotes && (
+                       <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-stone-700 relative animate-fade-in">
+                          <span className="block text-[10px] font-bold text-yellow-700 uppercase mb-1">{t.results.your_notes_label}</span>
+                          <div className="whitespace-pre-wrap text-xs">{step.userNotes}</div>
+                          <button onClick={openNoteModal} className="absolute top-2 right-2 text-yellow-600 p-1">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                          </button>
+                       </div>
                     )}
                 </div>
-            )}
-
-            {/* Nearby Attractions Section */}
-            {areNearbyOpen && (
-                <div className="mt-4 p-4 bg-indigo-50 border border-indigo-100 rounded-lg animate-fade-in text-sm text-stone-700">
-                    <h4 className="font-bold text-indigo-800 mb-2 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                        {t.results.nearby_title}
-                    </h4>
-                    {isLoadingNearby ? (
-                        <div className="flex items-center gap-2 text-indigo-600 italic">
-                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            {t.results.loading_nearby}
-                        </div>
-                    ) : (
-                        step.nearbyAttractions && step.nearbyAttractions.length > 0 ? (
-                            <ul className="space-y-2">
-                                {step.nearbyAttractions.map((attraction, i) => (
-                                    <li key={i} className="flex flex-col bg-white p-2 rounded border border-indigo-100 hover:border-indigo-300 transition-colors">
-                                        <div className="flex justify-between items-start gap-2">
-                                            <span className="font-semibold text-indigo-900">{attraction.name}</span>
-                                            <a 
-                                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(attraction.name + " near " + step.title)}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-indigo-400 hover:text-indigo-700 shrink-0"
-                                                title="View on Google Maps"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
-                                            </a>
-                                        </div>
-                                        <div className="flex justify-between text-xs text-indigo-600 mt-1">
-                                            <span className="bg-indigo-50 px-1.5 py-0.5 rounded">{attraction.type}</span>
-                                            <span className="flex items-center gap-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                                                {attraction.distance}
-                                            </span>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <p className="italic text-indigo-600">{t.results.no_nearby_found}</p>
-                        )
-                    )}
-                </div>
-            )}
-            
-            {/* Display user notes if present */}
-            {step.userNotes && (
-               <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-stone-700 relative animate-fade-in">
-                  <span className="block text-xs font-bold text-yellow-700 uppercase mb-1">{t.results.your_notes_label}</span>
-                  <div className="whitespace-pre-wrap">{step.userNotes}</div>
-                  <button onClick={openNoteModal} className="absolute top-2 right-2 text-yellow-600 hover:text-yellow-800 p-1">
-                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                  </button>
-               </div>
             )}
           </div>
 
-          {/* Action Footer */}
-          <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap gap-2 justify-start print:hidden">
-              <a 
-                href={searchUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group/btn flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-teal-600 transition-colors bg-slate-50 hover:bg-teal-50 px-3 py-2 rounded-lg border border-transparent hover:border-teal-100"
-              >
-                <svg className="w-4 h-4 text-slate-400 group-hover/btn:text-teal-500 transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                {t.results.verify_btn}
-              </a>
-
+          {/* Action Footer - Mobile Optimized Grid */}
+          <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 md:flex md:flex-wrap gap-2 print:hidden">
               <a 
                 href={directionsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group/btn flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-blue-600 transition-colors bg-slate-50 hover:bg-blue-50 px-3 py-2 rounded-lg border border-transparent hover:border-blue-100"
+                className="flex items-center justify-center gap-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-blue-100 hover:text-blue-700 px-3 py-2.5 rounded-lg transition-colors"
               >
-                <svg className="w-4 h-4 text-slate-400 group-hover/btn:text-blue-500 transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
-                </svg>
                 {t.results.directions_btn}
               </a>
 
-              {(transport === Transport.BUS || transport === Transport.RIVER) && (
-                <a 
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${cleanTitleForSearch(step.title)} Amposta ${transport === Transport.BUS ? 'bus stop' : 'river pier'}`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group/btn flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-indigo-600 transition-colors bg-slate-50 hover:bg-indigo-50 px-3 py-2 rounded-lg border border-transparent hover:border-indigo-100"
-                  title={`Find the nearest ${transport === Transport.BUS ? 'bus stop' : 'river pier'} for ${step.title}`}
-                >
-                  <svg className="w-4 h-4 text-slate-400 group-hover/btn:text-indigo-500 transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle>
-                  </svg>
-                  {transport === Transport.BUS ? t.results.check_bus_stop : t.results.check_river_pier}
-                </a>
-              )}
-              
               {showBookingBtn && (
                 <button 
                   onClick={onViewBooking}
-                  className={`group/btn flex items-center gap-2 text-xs font-medium transition-all px-3 py-2 rounded-lg border ${
+                  className={`flex items-center justify-center gap-2 text-xs font-bold px-3 py-2.5 rounded-lg transition-all ${
                      hasDirectBooking 
-                     ? "bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white border-transparent shadow-md transform hover:scale-105" 
-                     : "bg-teal-50 hover:bg-teal-100 border-teal-100 hover:border-teal-200 text-teal-700"
+                     ? "bg-amber-100 text-amber-900 hover:bg-amber-200" 
+                     : "bg-teal-50 text-teal-700 hover:bg-teal-100"
                   }`}
                 >
-                  {hasDirectBooking ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
-                  ) : (
-                      <svg className="w-4 h-4 text-teal-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
-                      </svg>
-                  )}
                   {t.results.view_booking_btn}
                 </button>
               )}
@@ -496,13 +407,10 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
               {onGenerateInstructions && (
                   <button
                     onClick={handleInstructionsClick}
-                    className={`group/btn flex items-center gap-2 text-xs font-medium transition-colors px-3 py-2 rounded-lg border ${
-                        areInstructionsOpen
-                        ? "bg-teal-50 border-teal-200 text-teal-800"
-                        : "bg-slate-50 hover:bg-teal-50 border-transparent hover:border-teal-100 text-slate-500 hover:text-teal-600"
+                    className={`flex items-center justify-center gap-2 text-xs font-bold px-3 py-2.5 rounded-lg transition-colors ${
+                        areInstructionsOpen ? "bg-teal-100 text-teal-800" : "bg-slate-50 text-slate-500 hover:text-teal-600 hover:bg-teal-50"
                     }`}
                   >
-                    <svg className={`w-4 h-4 transition-colors ${areInstructionsOpen ? 'text-teal-600' : 'text-slate-400 group-hover/btn:text-teal-500'}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                     {t.results.step_by_step_btn}
                   </button>
               )}
@@ -510,63 +418,26 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
               {onFetchNearby && (
                   <button
                     onClick={handleNearbyClick}
-                    className={`group/btn flex items-center gap-2 text-xs font-medium transition-colors px-3 py-2 rounded-lg border ${
-                        areNearbyOpen
-                        ? "bg-indigo-50 border-indigo-200 text-indigo-800"
-                        : "bg-slate-50 hover:bg-indigo-50 border-transparent hover:border-indigo-100 text-slate-500 hover:text-indigo-600"
+                    className={`flex items-center justify-center gap-2 text-xs font-bold px-3 py-2.5 rounded-lg transition-colors ${
+                        areNearbyOpen ? "bg-indigo-100 text-indigo-800" : "bg-slate-50 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50"
                     }`}
                   >
-                    <svg className={`w-4 h-4 transition-colors ${areNearbyOpen ? 'text-indigo-600' : 'text-slate-400 group-hover/btn:text-indigo-500'}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                     {t.results.nearby_attractions_btn}
                   </button>
               )}
 
               <button 
-                onClick={handleCopy}
-                className="group/btn flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-teal-600 transition-colors bg-slate-50 hover:bg-teal-50 px-3 py-2 rounded-lg border border-transparent hover:border-teal-100"
-                title={t.results.copy_step}
-              >
-                 {copied ? (
-                    <>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-teal-600"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        <span className="text-teal-600">{t.results.copied}</span>
-                    </>
-                 ) : (
-                    <>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        {t.results.copy_step}
-                    </>
-                 )}
-              </button>
-
-              <button 
                 onClick={openNoteModal}
-                className="group/btn flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-amber-600 transition-colors bg-slate-50 hover:bg-amber-50 px-3 py-2 rounded-lg border border-transparent hover:border-amber-100"
+                className="flex items-center justify-center gap-2 text-xs font-bold text-slate-500 bg-slate-50 hover:bg-yellow-50 hover:text-yellow-700 px-3 py-2.5 rounded-lg transition-colors"
               >
-                <svg className="w-4 h-4 text-slate-400 group-hover/btn:text-amber-500 transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                </svg>
                 {step.userNotes ? t.results.edit_note_btn : t.results.add_note_btn}
               </button>
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="bg-slate-50 border-t md:border-t-0 md:border-l border-slate-200 p-2 flex md:flex-col items-center justify-center gap-2 shrink-0 print:hidden">
-          <button 
-            onClick={onMoveUp}
-            disabled={index === 0}
-            className="p-2 rounded-lg hover:bg-white hover:shadow-sm text-slate-500 hover:text-teal-600 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-          </button>
-          <button 
-            onClick={onMoveDown}
-            disabled={index === totalSteps - 1}
-            className="p-2 rounded-lg hover:bg-white hover:shadow-sm text-slate-500 hover:text-teal-600 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-          </button>
+        {/* Controls - Mobile bottom right absolute or keep simple */}
+        <div className="absolute top-2 right-2 flex flex-col gap-1 md:hidden z-20">
+             {/* Mobile specific controls overlay if needed, currently reusing logic via padding */}
         </div>
       </div>
 
@@ -591,18 +462,8 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                   />
                </div>
                <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-                  <button 
-                    onClick={handleCancelNote}
-                    className="px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-200 rounded-lg transition-colors"
-                  >
-                    {t.results.cancel_note}
-                  </button>
-                  <button 
-                    onClick={handleSaveNote}
-                    className="px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-sm transition-colors"
-                  >
-                    {t.results.save_note}
-                  </button>
+                  <button onClick={handleCancelNote} className="px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-200 rounded-lg">{t.results.cancel_note}</button>
+                  <button onClick={handleSaveNote} className="px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg">{t.results.save_note}</button>
                </div>
             </div>
          </div>

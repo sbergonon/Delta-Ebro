@@ -63,3 +63,11 @@ export interface NearbyAttraction {
   type: string;
   distance: string;
 }
+
+export interface SavedItinerary {
+  id: string;
+  name: string;
+  createdAt: number;
+  preferences: UserPreferences;
+  result: ItineraryResult;
+}
