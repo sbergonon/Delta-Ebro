@@ -138,46 +138,47 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-stone-50 flex flex-col font-sans overflow-x-hidden">
       
       {/* Navbar */}
       <header className="bg-white border-b border-stone-200 sticky top-0 z-30 print:hidden shadow-sm">
-        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer group" onClick={handleReset}>
-            <span className="text-2xl group-hover:scale-110 transition-transform">🌾</span>
+        <div className="max-w-3xl mx-auto px-3 sm:px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group shrink-0" onClick={handleReset}>
+            <span className="text-xl sm:text-2xl group-hover:scale-110 transition-transform">🌾</span>
             <div className="flex flex-col">
-                <h1 className="font-bold text-lg sm:text-xl tracking-tight text-stone-800 leading-none">
-                Amposta<span className="text-teal-600">Explorer</span>
+                <h1 className="font-bold text-base sm:text-xl tracking-tight text-stone-800 leading-none">
+                Amposta<span className="text-teal-600">Exp</span>
                 </h1>
-                <span className="text-[10px] text-stone-400 font-mono tracking-widest uppercase">v2.1 AI Guide</span>
+                <span className="text-[9px] sm:text-[10px] text-stone-400 font-mono tracking-widest uppercase">v2.1 AI</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
+          
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
              {/* Restaurant Finder Button */}
              <button 
                 onClick={handleFindRestaurants}
-                className="text-xs font-bold text-stone-600 bg-orange-50 hover:bg-orange-100 border border-orange-100 px-3 py-1.5 rounded-full transition-all flex items-center gap-2 shadow-sm"
+                className="text-xs font-bold text-stone-600 bg-orange-50 hover:bg-orange-100 border border-orange-100 px-2 sm:px-3 py-1.5 rounded-full transition-all flex items-center gap-1 sm:gap-2 shadow-sm"
                 title="Buscar Restaurantes Cerca"
              >
-                <span className="text-lg">🍽️</span>
-                <span className="hidden sm:inline">Gastro GPS</span>
+                <span className="text-base sm:text-lg">🍽️</span>
+                <span className="hidden sm:inline">Gastro</span>
              </button>
 
              <button 
                 onClick={() => setShowSavedTrips(true)}
-                className="text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-100 px-3 py-1.5 rounded-full transition-all flex items-center gap-2 shadow-sm"
+                className="text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-100 px-2 sm:px-3 py-1.5 rounded-full transition-all flex items-center gap-1 sm:gap-2 shadow-sm"
              >
-                <span className="text-lg">📂</span>
+                <span className="text-base sm:text-lg">📂</span>
                 <span className="hidden sm:inline">{t.saved_trips_btn}</span>
                 <span className="bg-teal-200 text-teal-800 px-1.5 rounded-md text-[10px]">{savedTrips.length}</span>
              </button>
 
-             <div className="flex bg-stone-100 p-1 rounded-lg">
+             <div className="flex bg-stone-100 p-0.5 sm:p-1 rounded-lg">
                 {(['ca', 'es', 'en'] as Language[]).map(lang => (
                   <button
                     key={lang}
                     onClick={() => handleLanguageChange(lang)}
-                    className={`text-[10px] sm:text-xs font-bold px-2 py-1 rounded-md transition-all uppercase ${
+                    className={`text-[9px] sm:text-xs font-bold px-1.5 sm:px-2 py-1 rounded-md transition-all uppercase ${
                       preferences.language === lang 
                       ? 'bg-white text-teal-600 shadow-sm' 
                       : 'text-stone-400 hover:text-stone-600'

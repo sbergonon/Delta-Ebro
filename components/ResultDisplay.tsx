@@ -174,19 +174,26 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
 
   // Logic to generate the Embedded Map URL safely
   const renderDayMapEmbed = () => {
-      // Safety check: if no visible steps, don't try to map
-      if (!visibleSteps || visibleSteps.length < 2) return null;
+      if (!visibleSteps || visibleSteps.length === 0) return null;
 
       try {
+        // Prepare locations
         const locations = visibleSteps
             .filter(s => isLikelyAttraction(s) || s.title.toLowerCase().includes('hotel') || s.title.toLowerCase().includes('restaurant'))
             .map(getStepLocation);
 
-        if (locations.length < 2) return null;
-
-        const origin = locations[0];
-        const destination = locations[locations.length - 1];
-        const waypoints = locations.slice(1, -1).join('|');
+        let origin = "Amposta, Spain";
+        let destination = "Amposta, Spain";
+        let waypoints = "";
+        
+        if (locations.length >= 2) {
+             origin = locations[0];
+             destination = locations[locations.length - 1];
+             waypoints = locations.slice(1, -1).join('|');
+        } else if (locations.length === 1) {
+             origin = "Amposta, Spain";
+             destination = locations[0];
+        }
 
         let mode = 'driving';
         if (preferences.transport === Transport.WALKING) mode = 'walking';
@@ -198,12 +205,12 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
         const apiKey = getApiKeySafe();
 
         // Construct Universal Google Maps URL (works without API key)
-        const externalMapUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${encodeURIComponent(waypoints)}&travelmode=${mode}`;
+        const externalMapUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}${waypoints ? `&waypoints=${encodeURIComponent(waypoints)}` : ''}&travelmode=${mode}`;
 
         // Construct Embed URL (requires API key)
         let embedUrl = "";
         if (apiKey) {
-             embedUrl = `https://www.google.com/maps/embed/v1/directions?key=${apiKey}&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${encodeURIComponent(waypoints)}&mode=${mode}`;
+             embedUrl = `https://www.google.com/maps/embed/v1/directions?key=${apiKey}&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}${waypoints ? `&waypoints=${encodeURIComponent(waypoints)}` : ''}&mode=${mode}`;
         }
 
         return (
@@ -217,7 +224,7 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
                             <div className="text-left">
                                 <span className="font-bold text-stone-800 block text-sm sm:text-base">Mapa del Dia {activeDay}</span>
                                 <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
-                                    {locations.length} Punts • {t.transport_labels[preferences.transport]}
+                                    {locations.length > 0 ? `${locations.length} Punts` : 'Ruta General'} • {t.transport_labels[preferences.transport]}
                                 </span>
                             </div>
                         </div>
@@ -237,22 +244,27 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
                                 src={embedUrl}
                                 title="Day Map"
                                 className="absolute inset-0"
+                                onError={(e) => {
+                                    // If iframe fails to load (e.g. key restrictions), we hide it via CSS class or similar, 
+                                    // but since we can't easily detect cross-origin iframe errors in React, 
+                                    // we rely on the overlay button being visible.
+                                    // Note: API Key errors often show a gray map with "Oops" text, so the button overlay remains crucial.
+                                }}
                             ></iframe>
                         ) : (
-                             <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-slate-400">
-                                 <span className="text-4xl opacity-20">🗺️</span>
+                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 text-slate-400 opacity-50 bg-[url('https://www.gstatic.com/images/branding/product/2x/maps_96dp.png')] bg-no-repeat bg-center bg-[length:100px_100px] grayscale">
                              </div>
                         )}
                         
-                        {/* Always show the external link button overlay */}
-                        <div className="absolute bottom-4 left-0 right-0 flex justify-center z-10 pointer-events-none">
+                        {/* Always show the external link button overlay centered if no embed, or bottom if embed exists */}
+                        <div className={`absolute inset-0 flex items-center justify-center z-10 pointer-events-none ${embedUrl ? 'bg-transparent' : 'bg-slate-100/50 backdrop-blur-sm'}`}>
                             <a 
                                 href={externalMapUrl}
                                 target="_blank" 
                                 rel="noreferrer"
-                                className="pointer-events-auto bg-white/95 backdrop-blur text-sm font-bold text-blue-600 px-4 py-2.5 rounded-full shadow-md border border-slate-200 hover:bg-blue-50 flex items-center gap-2 transition-transform hover:scale-105"
+                                className={`pointer-events-auto bg-white text-sm font-bold text-blue-600 px-6 py-3 rounded-full shadow-lg border border-slate-200 hover:bg-blue-50 flex items-center gap-2 transition-transform hover:scale-105 ${embedUrl ? 'absolute bottom-4 shadow-md px-4 py-2 text-xs opacity-90 hover:opacity-100 translate-y-0' : ''}`}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M16.2 7.8l-2 6.3-6.4 2.1 2-6.3z"></path></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M16.2 7.8l-2 6.3-6.4 2.1 2-6.3z"></path></svg>
                                 Veure ruta a Google Maps
                             </a>
                         </div>
