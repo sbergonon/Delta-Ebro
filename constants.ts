@@ -1,4 +1,5 @@
 
+
 import { Theme, Transport, Language, AccommodationMode } from './types';
 
 export const THEME_ICONS: Record<Theme, string> = {
@@ -377,7 +378,7 @@ Més enllà del Delta, les **Terres de l'Ebre** ofereixen un patrimoni excepcion
         subtitle: "Horarios i Mobilitat",
         content: `
 *   **🕒 Horarios de Museus:** La majoria de museus i monuments (Castell de Miravet, Catedral de Tortosa) **TANQUEN ELS DILLUNS**. Planifica activitats de natura per als dilluns.
-*   **🚆 Tren i Bus:** L'estació de l'Aldea connecta amb Barcelona/València. Per moure's entre pobles (Tortosa-Amposta-La Ràpita), el bus HIFE és l'opció principal.
+*   **🚆 Tren i Bus:** L'estació de l'Aldea connecta amb Barcelona/València. Per moure's entre pobles (Tortosa-Amposta-La Ràpita), el bus HIFE es l'opció principal.
 *   **🛳️ Riu:** Els vaixells turístics tenen horaris estacionals. A l'hivern la freqüència baixa molt.
 *   **🍽️ Dinar:** A l'interior (Terra Alta/Ribera), els horaris de dinar són estrictes (13:30-15:00). Reserva sempre en cap de setmana.
 `
@@ -474,7 +475,7 @@ Aquí tens contactes clau per moure't per les Terres de l'Ebre:
       web_info: "Web Info",
       book_table: "Reservar Mesa",
       search_tickets: "Buscar Tickets",
-      verify_warning: "* Importante: Verifica siempre los horarios. Muchos museos cierran los lunes.",
+      verify_warning: "* Important: Verifica siempre los horarios. Muchos museos cierran los lunes.",
       detected_places: "Puntos de interés detectados",
       verified_sources: "Fuentes Web Verificadas",
       view_map: "Ver en app",
@@ -555,7 +556,7 @@ Contactos clave para moverte por las Terres de l'Ebre:
 *   **Deltebre / Riumar:** Taxis Deltebre (+34 616 46 82 82)
 *   **Terra Alta (Gandesa):** Taxi Gandesa (+34 659 36 24 37)
 
-**💰 Tarifas Estimades:**
+**💰 Tarifes Estimades:**
 *   Amposta ↔ Tortosa: ~25€
 *   Amposta ↔ Estación l'Aldea: ~15€
 *   Amposta ↔ Poble Nou (Delta): ~28€
@@ -575,16 +576,16 @@ Contactos clave para moverte por las Terres de l'Ebre:
     save_btn: "Save",
     saved_trips_btn: "My Trips",
     saved_trips_title: "Saved Trips",
-    no_saved_trips: "No saved trips yet.",
+    no_saved_trips: "You don't have any saved trips yet.",
     load_btn: "Load",
     delete_btn: "Delete",
     create_new_btn: "New Trip",
     section_1_title: "What experience are you looking for?",
-    section_2_title: "Duration & Date",
+    section_2_title: "Duration and Date",
     section_3_title: "Transport",
     section_accommodation_title: "Accommodation",
     section_4_title: "Anything else? (Optional)",
-    section_pois_title: "Specific Places & Towns",
+    section_pois_title: "Specific Places and Villages",
     label_duration: "DURATION",
     label_day: "Day",
     label_days: "Days",
@@ -592,32 +593,32 @@ Contactos clave para moverte por las Terres de l'Ebre:
     label_date_hint: "We will check for closing days (Mondays) and holidays.",
     label_river_option: "Include upriver route",
     label_river_hint: "Add visit to **Tortosa** or **Miravet** via river.",
-    label_extra_hint: "Ex: Traveling with kids, vegetarian, interested in photography...",
+    label_extra_hint: "Ex: I'm traveling with kids, I'm vegetarian, interested in photography...",
     label_custom_selection: "Select themes to combine:",
-    label_custom_transport_selection: "Select transport modes to combine:",
-    label_pois_hint: "Select places/towns you WANT to visit:",
-    label_base_location: "Where is your hotel/base?",
+    label_custom_transport_selection: "Select modes to combine:",
+    label_pois_hint: "Select the places/villages you WANT to visit:",
+    label_base_location: "Where is your hotel/house?",
     themes: {
       [Theme.HISTORICAL]: { label: "Historical (Tortosa/Miravet/Amposta)", desc: "Cathedrals, Templar Castles and Modernism." },
-      [Theme.CIVIL_WAR]: { label: "Civil War (Corbera/Terra Alta)", desc: "Trenches, Old Town ruins and memory spaces." },
-      [Theme.GEOLOGICAL]: { label: "Geological & Caves", desc: "Meravelles Caves, Ports mountains and Delta." },
-      [Theme.NATURE]: { label: "Nature & Delta", desc: "Birdwatching, lagoons and virgin beaches." },
-      [Theme.GASTRONOMIC]: { label: "Gastronomic & Wine", desc: "Delta rice, clotxa and Terra Alta wines." },
-      [Theme.CUSTOM]: { label: "Custom (Mix)", desc: "Create your own adventure by combining themes." }
+      [Theme.CIVIL_WAR]: { label: "Civil War (Corbera/Terra Alta)", desc: "Trenches, Old Village and memory spaces." },
+      [Theme.GEOLOGICAL]: { label: "Geological and Caves", desc: "Meravelles Caves, Ports and Delta." },
+      [Theme.NATURE]: { label: "Nature and Delta", desc: "Birdwatching, lagoons and virgin beaches." },
+      [Theme.GASTRONOMIC]: { label: "Gastronomic and Wine", desc: "Delta Rice, clotxa and Terra Alta wines." },
+      [Theme.CUSTOM]: { label: "Custom (Mix)", desc: "Create your own adventure combining themes." }
     },
     transports: {
-      [Transport.WALKING]: "Walking (In towns)",
+      [Transport.WALKING]: "Walking (In villages)",
       [Transport.BUS]: "Bus (Hife)",
       [Transport.CAR]: "Own Car",
       [Transport.RIVER]: "Boat / River Transport",
-      [Transport.TRAIN]: "Train (Regional/Mid-distance)",
-      [Transport.BIKE]: "Bicycle / Green Way",
+      [Transport.TRAIN]: "Train (Regional/Medium Distance)",
+      [Transport.BIKE]: "Bicycle / Greenway",
       [Transport.TAXI]: "Taxi (Private)",
       [Transport.MIX]: "Mix / Combined"
     },
     accommodations: {
         [AccommodationMode.BASE]: { label: "Base Camp (Fixed)", desc: "Sleep in the same place every night." },
-        [AccommodationMode.ROUTE]: { label: "Touring Route", desc: "Sleep in different towns." }
+        [AccommodationMode.ROUTE]: { label: "Route (Moving)", desc: "Sleep in different villages." }
     },
     results: {
       itinerary_title: "Your Itinerary",
@@ -626,22 +627,22 @@ Contactos clave para moverte por las Terres de l'Ebre:
       river_note_upriver: "Route connecting the Delta with the interior (Tortosa/Miravet).",
       river_note_local: "Showing accessibility from the detected pier.",
       view_full_river_route: "View full river route",
-      pier_locations: "Key pier locations",
+      pier_locations: "Key piers",
       river_route_title: "Ebro River Route",
-      plan_title: "Travel Plan",
+      plan_title: "Trip Plan",
       day: "Day",
       no_activities: "No activities scheduled for this day.",
-      bookings_title: "Bookings & Availability",
+      bookings_title: "Bookings and Availability",
       bookings_subtitle: "Quick links for tickets and tables",
       web_info: "Web Info",
       book_table: "Book Table",
       search_tickets: "Search Tickets",
-      verify_warning: "* Important: Always check schedules. Many museums are CLOSED ON MONDAYS.",
-      detected_places: "Detected Points of Interest",
+      verify_warning: "* Important: Always verify schedules. Many museums close on Mondays.",
+      detected_places: "Detected points of interest",
       verified_sources: "Verified Web Sources",
       view_map: "View in app",
       verify_btn: "Verify",
-      directions_btn: "Directions",
+      directions_btn: "Get directions",
       add_note_btn: "Note",
       edit_note_btn: "Edit note",
       save_note: "Save",
@@ -664,20 +665,20 @@ Contactos clave para moverte por las Terres de l'Ebre:
       check_bus_stop: "Bus",
       check_river_pier: "Pier",
       special_event: "Event",
-      step_by_step_btn: "Step-by-step",
-      loading_instructions: "Generating guide...",
+      step_by_step_btn: "Step by Step Guide",
+      loading_instructions: "Generating steps...",
       instructions_title: "How to do this activity:",
       nearby_attractions_btn: "Nearby",
       loading_nearby: "Searching places...",
       nearby_title: "Also nearby (1km):",
-      no_nearby_found: "No major attractions found nearby.",
+      no_nearby_found: "No featured places found nearby.",
       copy_step: "Copy",
       copied: "Copied!",
       saved_success: "Trip saved successfully!"
     },
     errors: {
       generic: "An unexpected error occurred.",
-      api_missing: "Could not connect to the travel assistant."
+      api_missing: "Could not connect to the assistant."
     },
     delta_info: {
         title: "Terres de l'Ebre",
@@ -686,28 +687,28 @@ Contactos clave para moverte por las Terres de l'Ebre:
 Beyond the Delta, **Terres de l'Ebre** offers exceptional heritage upriver:
 
 ### 🏰 Historical Heritage
-*   **Tortosa:** Two-thousand-year-old city with the **Cathedral of Santa Maria**, the Suda Castle, and Royal Colleges.
-*   **Miravet:** One of the most beautiful villages in Catalonia, with its imposing **Templar Castle** overlooking the river.
-*   **Corbera d'Ebre:** The **Old Town**, destroyed during the Battle of the Ebro, remains as a peace memorial.
+*   **Tortosa:** Two-thousand-year-old city with **Saint Mary's Cathedral**, the Suda Castle and the Royal Colleges (renaissance).
+*   **Miravet:** One of the most beautiful villages in Catalonia, with its imposing **Templar Castle** over the river and the traditional ferry boat.
+*   **Corbera d'Ebre:** The **Old Village**, destroyed during the Battle of the Ebro, is today a symbol of peace.
 
-### 🌿 Nature & Adventure
-*   **The Delta:** Lagoons, rice fields, and endless beaches.
+### 🌿 Nature and Adventure
+*   **The Delta:** Lagoons, rice fields and endless beaches.
 *   **Els Ports:** Wild mountains ideal for hiking and canyoning.
-*   **Green Way:** Old railway line converted into a cycling route connecting the mountains to the sea.
+*   **Greenway:** Old railway line converted into a cycling route connecting the mountains with the sea.
 `
     },
     travel_tips: {
         title: "Logistics Tips",
-        subtitle: "Schedules & Mobility",
+        subtitle: "Schedules and Mobility",
         content: `
-*   **🕒 Museum Hours:** Most museums and monuments (Miravet Castle, Tortosa Cathedral) are **CLOSED ON MONDAYS**. Plan nature activities for Mondays.
-*   **🚆 Train & Bus:** L'Aldea station connects with Barcelona/Valencia. To move between towns (Tortosa-Amposta-La Ràpita), the HIFE bus is the main option.
+*   **🕒 Museum Hours:** Most museums and monuments (Miravet Castle, Tortosa Cathedral) **CLOSE ON MONDAYS**. Plan nature activities for Mondays.
+*   **🚆 Train and Bus:** L'Aldea station connects with Barcelona/Valencia. To move between towns (Tortosa-Amposta-La Ràpita), the HIFE bus is the main option.
 *   **🛳️ River:** Tourist boats have seasonal schedules. In winter, frequency drops significantly.
-*   **🍽️ Dining:** In the interior (Terra Alta/Ribera), lunch hours are strict (1:30 PM - 3:00 PM). Always book on weekends.
+*   **🍽️ Lunch:** In the interior (Terra Alta/Ribera), lunch hours are strict (13:30-15:00). Always book on weekends.
 `
     },
     taxi_info: {
-        title: "🚖 Taxis & Transport",
+        title: "🚖 Taxis and Transport",
         content: `
 Key contacts for moving around Terres de l'Ebre:
 
@@ -719,9 +720,9 @@ Key contacts for moving around Terres de l'Ebre:
 
 **💰 Estimated Fares:**
 *   Amposta ↔ Tortosa: ~25€
-*   Amposta ↔ Station l'Aldea: ~15€
+*   Amposta ↔ L'Aldea Station: ~15€
 *   Amposta ↔ Poble Nou (Delta): ~28€
-*   Green Way Service (Bike pickup): Check local rental companies.
+*   Greenway Service (Bike pickup): Consult local rental companies.
 `
     }
   }
