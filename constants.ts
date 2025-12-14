@@ -383,18 +383,21 @@ Més enllà del Delta, les **Terres de l'Ebre** ofereixen un patrimoni excepcion
 `
     },
     taxi_info: {
-        title: "🚖 Taxis i Tarifes Aprox.",
+        title: "🚖 Taxis i Transports",
         content: `
+Aquí tens contactes clau per moure't per les Terres de l'Ebre:
+
 *   **Amposta:** Radio Taxi Amposta (+34 977 70 01 12)
 *   **Tortosa:** Servitaxi Tortosa (+34 977 44 30 30)
-*   **Estació Tren (l'Aldea):** Parada sempre disponible a l'arribada de trens.
+*   **La Ràpita:** Taxi La Ràpita (+34 677 56 65 66)
+*   **Deltebre / Riumar:** Taxis Deltebre (+34 616 46 82 82)
+*   **Terra Alta (Gandesa):** Taxi Gandesa (+34 659 36 24 37)
 
-**💰 Preus Estimats (Trajecte d'anada):**
-*   Amposta ↔ Tortosa: ~25-30€
-*   Amposta ↔ Estació l'Aldea: ~15-18€
-*   Amposta ↔ Miravet: ~60-70€
-*   Amposta ↔ Poble Nou (Delta): ~25-30€
-*   Amposta ↔ Platja Trabucador: ~35-40€
+**💰 Tarifes Estimades:**
+*   Amposta ↔ Tortosa: ~25€
+*   Amposta ↔ Estació l'Aldea: ~15€
+*   Amposta ↔ Poble Nou (Delta): ~28€
+*   Servei Via Verda (Recollida bicis): Consultar empreses locals de lloguer.
 `
     }
   },
@@ -542,18 +545,21 @@ Más allá del Delta, las **Terres de l'Ebre** ofrecen un patrimonio excepcional
 `
     },
     taxi_info: {
-        title: "🚖 Taxis y Tarifas Aprox.",
+        title: "🚖 Taxis y Transporte",
         content: `
+Contactos clave para moverte por las Terres de l'Ebre:
+
 *   **Amposta:** Radio Taxi Amposta (+34 977 70 01 12)
 *   **Tortosa:** Servitaxi Tortosa (+34 977 44 30 30)
-*   **Estación Tren (l'Aldea):** Parada siempre disponible a la llegada de trenes.
+*   **La Ràpita:** Taxi La Ràpita (+34 677 56 65 66)
+*   **Deltebre / Riumar:** Taxis Deltebre (+34 616 46 82 82)
+*   **Terra Alta (Gandesa):** Taxi Gandesa (+34 659 36 24 37)
 
-**💰 Precios Estimados (Trayecto de ida):**
-*   Amposta ↔ Tortosa: ~25-30€
-*   Amposta ↔ Estación l'Aldea: ~15-18€
-*   Amposta ↔ Miravet: ~60-70€
-*   Amposta ↔ Poble Nou (Delta): ~25-30€
-*   Amposta ↔ Playa Trabucador: ~35-40€
+**💰 Tarifas Estimadas:**
+*   Amposta ↔ Tortosa: ~25€
+*   Amposta ↔ Estación l'Aldea: ~15€
+*   Amposta ↔ Poble Nou (Delta): ~28€
+*   Servicio Vía Verde (Recogida bicis): Consultar alquileres locales.
 `
     }
   },
@@ -701,18 +707,21 @@ Beyond the Delta, **Terres de l'Ebre** offers exceptional heritage upriver:
 `
     },
     taxi_info: {
-        title: "🚖 Taxis & Approx Fares",
+        title: "🚖 Taxis & Transport",
         content: `
+Key contacts for moving around Terres de l'Ebre:
+
 *   **Amposta:** Radio Taxi Amposta (+34 977 70 01 12)
 *   **Tortosa:** Servitaxi Tortosa (+34 977 44 30 30)
-*   **Train Station (l'Aldea):** Taxi rank available at train arrivals.
+*   **La Ràpita:** Taxi La Ràpita (+34 677 56 65 66)
+*   **Deltebre / Riumar:** Taxis Deltebre (+34 616 46 82 82)
+*   **Terra Alta (Gandesa):** Taxi Gandesa (+34 659 36 24 37)
 
-**💰 Estimated Fares (One way):**
-*   Amposta ↔ Tortosa: ~25-30€
-*   Amposta ↔ Station l'Aldea: ~15-18€
-*   Amposta ↔ Miravet: ~60-70€
-*   Amposta ↔ Poble Nou (Delta): ~25-30€
-*   Amposta ↔ Trabucador Beach: ~35-40€
+**💰 Estimated Fares:**
+*   Amposta ↔ Tortosa: ~25€
+*   Amposta ↔ Station l'Aldea: ~15€
+*   Amposta ↔ Poble Nou (Delta): ~28€
+*   Green Way Service (Bike pickup): Check local rental companies.
 `
     }
   }

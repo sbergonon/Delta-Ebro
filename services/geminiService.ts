@@ -233,12 +233,12 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
         ${prefs.additionalInfo ? `- Notas: "${prefs.additionalInfo}"` : ''}
 
         FORMATO OBLIGATORIO (NO MARKDOWN PURO, USA TAGS):
-        Para cada paso usa:
+        Para cada paso usa estrictamente este formato con los tags:
         <<<STEP>>>
-        DAY: [Día]
-        TIME: [Hora]
-        TITLE: [Título]
-        DESCRIPTION: [Descripción]
+        DAY: [Día numérico]
+        TIME: [Hora aproximada]
+        TITLE: [Título corto de la actividad]
+        DESCRIPTION: [Descripción detallada, incluye logística]
         <<<END_STEP>>>
       `;
 
@@ -248,38 +248,71 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
           contents: prompt,
           config: {
             tools: [{ googleSearch: {} }, { googleMaps: {} }],
-            toolConfig: { retrievalConfig: { latLng: { latitude: 40.8125, longitude: 0.5216 } } },
-            systemInstruction: `Eres experto en Terres de l'Ebre.`,
+            toolConfig: { retrievalConfig: { latLng: { latitude: 40.7096, longitude: 0.5786 } } }, // Delta Coordinates
+            systemInstruction: `Eres un guía experto en el Delta del Ebro, Amposta y Tortosa.`,
             temperature: 0.4,
           },
       });
 
       const text = response.text || "";
       const steps: ItineraryStep[] = [];
-      // Improved Regex to be case insensitive and robust
-      const stepRegex = /<<<STEP>>>([\s\S]*?)<<<END_STEP>>>/gi;
-      let match;
-      let index = 0;
+      
+      // PARSING ROBUSTO
+      try {
+          // Improved Regex to be case insensitive and robust across lines
+          const stepRegex = /<<<STEP>>>([\s\S]*?)<<<END_STEP>>>/gi;
+          let match;
+          let index = 0;
 
-      while ((match = stepRegex.exec(text)) !== null) {
-          const content = match[1];
-          const dayMatch = content.match(/DAY:\s*(.*)/i);
-          const timeMatch = content.match(/TIME:\s*(.*)/i);
-          const titleMatch = content.match(/TITLE:\s*(.*)/i);
-          // Split description by looking for "DESCRIPTION:" case insensitive
-          const descSplit = content.split(/DESCRIPTION:\s*/i);
-          const description = descSplit.length > 1 ? descSplit[1].trim() : "";
+          while ((match = stepRegex.exec(text)) !== null) {
+              const content = match[1];
+              if (!content) continue;
 
-          if (titleMatch && description) {
-              steps.push({
-                  id: `step-${index++}`,
-                  day: dayMatch ? dayMatch[1].trim() : "1",
-                  timeOfDay: timeMatch ? timeMatch[1].trim() : "",
-                  title: titleMatch ? titleMatch[1].trim() : "",
-                  description: description,
-                  imageUrl: undefined
-              });
+              const dayMatch = content.match(/DAY:\s*(.*?)(?:\n|$)/i);
+              const timeMatch = content.match(/TIME:\s*(.*?)(?:\n|$)/i);
+              const titleMatch = content.match(/TITLE:\s*(.*?)(?:\n|$)/i);
+              
+              // Robust description extraction
+              let description = "";
+              const descSplit = content.split(/DESCRIPTION:\s*/i);
+              if (descSplit.length > 1) {
+                  description = descSplit[1].trim();
+              }
+
+              if (titleMatch && description) {
+                  steps.push({
+                      id: `step-${index++}`,
+                      day: dayMatch ? dayMatch[1].trim() : "1",
+                      timeOfDay: timeMatch ? timeMatch[1].trim() : "",
+                      title: titleMatch ? titleMatch[1].trim() : "Activity",
+                      description: description,
+                      imageUrl: undefined
+                  });
+              }
           }
+
+          // FALLBACK: If Regex failed completely (0 steps) but we have text, try a simpler parse or single chunk
+          if (steps.length === 0 && text.length > 100) {
+               console.warn("Regex parsing failed, attempting fallback parsing.");
+               // Split by "Day" if possible, otherwise treat as one big block
+               if (text.toLowerCase().includes('day 1') || text.toLowerCase().includes('dia 1')) {
+                   // Simple Day splitter fallback
+                   const days = text.split(/(?=Day \d|Dia \d)/i).filter(d => d.length > 20);
+                   days.forEach((dayText, i) => {
+                       steps.push({
+                           id: `fallback-${i}`,
+                           day: `${i + 1}`,
+                           timeOfDay: "Morning",
+                           title: `Ruta del Dia ${i + 1}`,
+                           description: dayText.trim(),
+                           imageUrl: undefined
+                       });
+                   });
+               }
+          }
+      } catch (e) {
+          console.error("Parsing error", e);
+          // Don't crash, return empty steps, ResultDisplay will handle it
       }
 
       const sources: GroundingSource[] = [];
