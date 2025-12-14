@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ItineraryStep, Transport, Theme, Language } from '../types';
@@ -36,7 +35,10 @@ const THEME_GRADIENTS: Record<Theme, string> = {
 
 // Heuristic to detect specific themes within steps
 const getEffectiveTheme = (step: ItineraryStep, globalTheme: Theme): Theme => {
-  const text = (step.title + ' ' + step.description).toLowerCase();
+  // SAFEGUARD: Ensure strings exist
+  const title = step?.title || "";
+  const desc = step?.description || "";
+  const text = (title + ' ' + desc).toLowerCase();
   
   if (/(arròs|arroz|paella|fideuà|marisc|restaurant|gastro|tapa|vermut|dinar|sopar|comida|cena|tasting|degustaci)/.test(text)) return Theme.GASTRONOMIC;
   if (/(búnquer|trinxera|trinchera|refugi|guerra|batalla|front|bombardeig|civil war)/.test(text)) return Theme.CIVIL_WAR;
@@ -45,21 +47,6 @@ const getEffectiveTheme = (step: ItineraryStep, globalTheme: Theme): Theme => {
   if (/(castell|torre|església|iglesia|catedral|museu|hist|romà|iber|castle|church)/.test(text)) return Theme.HISTORICAL;
 
   return globalTheme;
-};
-
-// Helper to clean title for Maps search queries
-const cleanTitleForSearch = (title: string) => {
-    const verbs = [
-        "Visit", "Tour", "Discover", "Explore", "Walk to", "Check-in at", "See", "View",
-        "Visita", "Visitar", "Ver", "Descubrir", "Explorar", "Caminar a", "Paseo por", "Ir a", "Ruta por", "Excursión a",
-        "Veure", "Descobrir", "Passeig per", "Anar a", "Ruta per", "Excursió a"
-    ];
-    const verbRegex = new RegExp(`^(${verbs.join('|')}) `, 'i');
-    
-    return title
-        .replace(verbRegex, '') 
-        .replace(/[:()].*$/, '') 
-        .trim();
 };
 
 const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({ 
@@ -83,7 +70,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
 }) => {
   const [imgError, setImgError] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
-  const [tempNote, setTempNote] = useState(step.userNotes || '');
+  const [tempNote, setTempNote] = useState(step?.userNotes || '');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingInstructions, setIsGeneratingInstructions] = useState(false);
   const [areInstructionsOpen, setAreInstructionsOpen] = useState(false);
@@ -94,6 +81,13 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
   const hasRetriedGeneration = useRef(false);
   const t = TRANSLATIONS[language];
 
+  // Defensive Checks
+  if (!step) return null;
+  const safeTitle = step.title || "Activity";
+  const safeDesc = step.description || "";
+  const safeDay = step.day || "1";
+  const safeTime = step.timeOfDay || "";
+
   useEffect(() => {
       setImgError(false);
       hasRetriedGeneration.current = false;
@@ -103,8 +97,6 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
       if (step.detailedInstructions) setIsGeneratingInstructions(false);
       if (step.nearbyAttractions) setIsLoadingNearby(false);
   }, [step.detailedInstructions, step.nearbyAttractions]);
-
-  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(`${step.title} Amposta hours and prices`)}`;
 
   let travelMode = 'driving';
   switch (transport) {
@@ -117,7 +109,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
     case Transport.CAR: travelMode = 'driving'; break;
   }
 
-  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${step.title}, Tarragona`)}&travelmode=${travelMode}`;
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${safeTitle}, Tarragona`)}&travelmode=${travelMode}`;
 
   const hasImage = step.imageUrl && !imgError;
   const effectiveTheme = getEffectiveTheme(step, theme);
@@ -125,8 +117,8 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
   const placeholderIcon = THEME_ICONS[effectiveTheme] || '🗺️';
   
   const isBookable = (() => {
-    const title = step.title.toLowerCase();
-    const desc = step.description.toLowerCase();
+    const title = safeTitle.toLowerCase();
+    const desc = safeDesc.toLowerCase();
     if (title.includes('check-in') || title.includes('check-out') || title.includes('esmorzar') || title.includes('desayuno') || title.includes('breakfast')) return false;
 
     const keywords = [
@@ -190,17 +182,6 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
       onFetchNearby();
   };
 
-  const handleCopy = async () => {
-    const text = `${step.title}\n\n${step.description}`;
-    try {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    } catch (e) {
-        console.error("Copy failed", e);
-    }
-  };
-
   const containerClasses = isSpecialEvent 
     ? "bg-white rounded-xl border-2 border-fuchsia-400 ring-4 ring-fuchsia-50 shadow-lg shadow-fuchsia-100/50 hover:shadow-xl transition-all duration-200 overflow-hidden flex flex-col md:flex-row group h-full md:min-h-[320px] relative z-10"
     : "bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col md:flex-row group h-full md:min-h-[320px]";
@@ -211,25 +192,20 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
     <>
       <div className={containerClasses}>
         
-        {/* MOBILE LAYOUT: Image Top, Info Below */}
-        {/* DESKTOP LAYOUT: Image Right */}
-
-        {/* 1. Image Section (Top on mobile, Right on desktop) */}
-        {/* We use 'order-first' md:order-last' to flip logic if needed, but structure here is clearer if image is first in DOM for mobile stack, adjusted via flex-row-reverse if needed. Current: flex-col md:flex-row implies Left (Info) Right (Image) usually, let's stick to standard flow. */}
-        
+        {/* IMAGE SECTION */}
         <div className={`relative h-48 md:h-auto md:w-5/12 lg:w-2/5 shrink-0 overflow-hidden border-b md:border-b-0 md:border-r border-slate-200 ${!hasImage ? placeholderGradient : 'bg-slate-100'} order-1 md:order-2`}>
             {/* Mobile-only Day Badge */}
             <div className="absolute top-3 left-3 z-20 bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg shadow-sm border border-slate-100 md:hidden flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-500 uppercase">{t.results.day} {step.day}</span>
+                <span className="text-xs font-bold text-slate-500 uppercase">{t.results.day} {safeDay}</span>
                 <span className="w-1 h-4 bg-slate-300"></span>
-                <span className="text-xs font-bold text-teal-600">{step.timeOfDay}</span>
+                <span className="text-xs font-bold text-teal-600">{safeTime}</span>
             </div>
 
             {hasImage ? (
                 <div className="w-full h-full relative group-hover:scale-[1.02] transition-transform duration-700 ease-out">
                   <img 
                       src={step.imageUrl} 
-                      alt={step.title}
+                      alt={safeTitle}
                       className="w-full h-full object-cover"
                       onError={() => {
                         setImgError(true);
@@ -265,22 +241,22 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
             )}
         </div>
 
-        {/* 2. Desktop Time/Day Indicator (Hidden on mobile) */}
+        {/* DESKTOP DAY INDICATOR */}
         <div className="hidden md:flex bg-slate-50 border-r border-slate-200 p-4 w-24 flex-col items-center justify-center gap-2 text-center shrink-0 order-1">
              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t.results.day}</span>
-             <span className="text-2xl font-black text-slate-700">{step.day}</span>
+             <span className="text-2xl font-black text-slate-700">{safeDay}</span>
              <div className="h-px w-8 bg-slate-300 my-2"></div>
              <span className="text-xs font-semibold text-teal-600 bg-teal-50 px-2 py-1 rounded-md writing-mode-vertical">
-                {step.timeOfDay}
+                {safeTime}
              </span>
         </div>
 
-        {/* 3. Content */}
+        {/* CONTENT SECTION */}
         <div className="p-5 flex-grow min-w-0 flex flex-col justify-between order-3">
           <div>
             <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
               <h3 className="text-lg md:text-xl font-bold text-stone-800 leading-tight group-hover:text-teal-700 transition-colors">
-                {step.title}
+                {safeTitle}
               </h3>
               {isSpecialEvent && (
                 <span className="shrink-0 bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-200 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm uppercase tracking-wide">
@@ -316,7 +292,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                     strong: ({node, ...props}) => <span className="font-semibold text-teal-700" {...props} />,
                 }}
               >
-                {step.description}
+                {safeDesc}
               </ReactMarkdown>
             </div>
 
@@ -380,7 +356,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
             )}
           </div>
 
-          {/* Action Footer - Mobile Optimized Grid */}
+          {/* Action Footer */}
           <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 md:flex md:flex-wrap gap-2 print:hidden">
               <a 
                 href={directionsUrl}
@@ -434,11 +410,6 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
               </button>
           </div>
         </div>
-
-        {/* Controls - Mobile bottom right absolute or keep simple */}
-        <div className="absolute top-2 right-2 flex flex-col gap-1 md:hidden z-20">
-             {/* Mobile specific controls overlay if needed, currently reusing logic via padding */}
-        </div>
       </div>
 
       {/* Note Edit Modal */}
@@ -452,7 +423,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
                   </button>
                </div>
                <div className="p-4">
-                  <div className="mb-2 text-sm text-stone-500 font-medium">{step.title}</div>
+                  <div className="mb-2 text-sm text-stone-500 font-medium">{safeTitle}</div>
                   <textarea 
                     value={tempNote}
                     onChange={(e) => setTempNote(e.target.value)}

@@ -435,7 +435,7 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
             </div>
          ) : (
             <div className="markdown-body prose prose-stone max-w-none bg-white p-6 rounded-xl border border-slate-200">
-                <ReactMarkdown>{result.markdown}</ReactMarkdown>
+                <ReactMarkdown>{result.markdown || ""}</ReactMarkdown>
             </div>
          )}
       </div>

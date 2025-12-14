@@ -555,7 +555,7 @@ Contactos clave para moverte por las Terres de l'Ebre:
 *   **Deltebre / Riumar:** Taxis Deltebre (+34 616 46 82 82)
 *   **Terra Alta (Gandesa):** Taxi Gandesa (+34 659 36 24 37)
 
-**💰 Tarifas Estimadas:**
+**💰 Tarifas Estimades:**
 *   Amposta ↔ Tortosa: ~25€
 *   Amposta ↔ Estación l'Aldea: ~15€
 *   Amposta ↔ Poble Nou (Delta): ~28€
