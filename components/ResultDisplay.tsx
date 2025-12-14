@@ -21,6 +21,7 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
   const [isBookingsOpen, setIsBookingsOpen] = useState(false);
   const [isDeltaInfoOpen, setIsDeltaInfoOpen] = useState(false);
   const [isTaxiInfoOpen, setIsTaxiInfoOpen] = useState(false);
+  const [isDayMapOpen, setIsDayMapOpen] = useState(true); // Default open to show the visual summary
   const [selectedBookingStep, setSelectedBookingStep] = useState<ItineraryStep | null>(null);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   
@@ -159,49 +160,102 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
       } catch (err) { console.error(err); }
   };
 
-  const renderRouteButton = () => {
-    let mapMode = 'driving';
-    if (preferences.transport === Transport.WALKING) mapMode = 'walking';
-    else if (preferences.transport === Transport.BUS || preferences.transport === Transport.TRAIN || preferences.transport === Transport.MIX) mapMode = 'transit';
-    else if (preferences.transport === Transport.BIKE) mapMode = 'bicycling';
+  // Helper to extract clean location names
+  const getStepLocation = (step: ItineraryStep) => {
+      // Remove generic time info "10:00 - Title"
+      let clean = step.title.replace(/^[\d]{1,2}[:.]\d{2}\s*[-–]\s*/, '').trim();
+      // Remove text in parenthesis (often descriptions)
+      clean = clean.replace(/\(.*\)/, '').trim();
+      // Append region to ensure Google Maps finds the right one
+      return `${clean}, Terres de l'Ebre, Spain`;
+  };
 
-    let locations: string[] = [];
-    if (visibleSteps.length > 0) {
-        locations = visibleSteps.map(step => {
-            let cleanTitle = step.title.replace(/[:()].*$/, '').trim();
-            return `${cleanTitle}, Amposta`;
-        }).filter((loc, i, arr) => i === 0 || loc !== arr[i-1]);
-    }
-    if (locations.length === 0) return null;
+  // Logic to generate the Embedded Map URL
+  const renderDayMapEmbed = () => {
+      if (visibleSteps.length < 2) return null;
 
-    let origin = "Amposta, Tarragona"; 
-    if (preferences.transport === Transport.RIVER && preferences.includeUpriver) origin = "Embarcadero de Amposta";
-    else if (locations.length > 0) { origin = locations[0]; locations = locations.slice(1); }
+      // Clean locations
+      const locations = visibleSteps
+          .filter(s => isLikelyAttraction(s) || s.title.toLowerCase().includes('hotel') || s.title.toLowerCase().includes('restaurant'))
+          .map(getStepLocation);
 
-    const baseUrl = "https://www.google.com/maps/dir/?api=1";
-    const fullUrl = `${baseUrl}&origin=${encodeURIComponent(origin)}${locations.length > 0 ? `&destination=${encodeURIComponent(locations[locations.length - 1])}` : ''}${locations.length > 1 ? `&waypoints=${locations.slice(0, -1).map(w => encodeURIComponent(w)).join('|')}` : ''}&travelmode=${mapMode}`;
+      if (locations.length < 2) return null;
 
-    return (
-      <a href={fullUrl} target="_blank" rel="noopener noreferrer" className="w-full py-4 px-6 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-4 text-stone-600 hover:border-teal-400 hover:text-teal-700 hover:bg-teal-50 transition-all shadow-sm group mb-6 print:hidden">
-         <div className="flex items-center gap-3">
-             <div className="bg-white p-2 rounded-full border border-slate-200 text-teal-600 group-hover:scale-110 transition-transform">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
-             </div>
-             <div className="text-left leading-tight">
-                 <span className="block font-bold text-sm">{t.results.suggested_route}</span>
-                 <span className="text-xs text-slate-500">{t.results.view_map} Google Maps</span>
-             </div>
-         </div>
-         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300 group-hover:text-teal-500"><polyline points="9 18 15 12 9 6"></polyline></svg>
-      </a>
-    );
+      const origin = locations[0];
+      const destination = locations[locations.length - 1];
+      const waypoints = locations.slice(1, -1).join('|');
+
+      let mode = 'driving';
+      if (preferences.transport === Transport.WALKING) mode = 'walking';
+      else if (preferences.transport === Transport.BIKE) mode = 'bicycling';
+      // For Bus/Train we usually use 'transit', but Embed API 'directions' mode sometimes prefers 'driving' for multi-point routes. 
+      // 'transit' in embed api often only works for point-to-point. Let's stick to driving/walking for visual clarity.
+      if (preferences.transport === Transport.BUS || preferences.transport === Transport.TRAIN) mode = 'driving';
+
+      // Attempt to retrieve API Key safely
+      let apiKey = "";
+      try {
+        // @ts-ignore
+        apiKey = import.meta.env.VITE_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "";
+        if (!apiKey && typeof process !== 'undefined') apiKey = process.env.API_KEY || "";
+      } catch (e) {}
+
+      if (!apiKey) return null;
+
+      const embedUrl = `https://www.google.com/maps/embed/v1/directions?key=${apiKey}&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${encodeURIComponent(waypoints)}&mode=${mode}`;
+
+      return (
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm mb-6 print:break-inside-avoid">
+               <button 
+                  onClick={() => setIsDayMapOpen(!isDayMapOpen)} 
+                  className="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition-colors border-b border-slate-100"
+               >
+                    <div className="flex items-center gap-2">
+                        <span className="text-xl">🗺️</span>
+                        <div className="text-left">
+                            <span className="font-bold text-stone-800 block text-sm sm:text-base">Mapa del Dia {activeDay}</span>
+                            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
+                                {locations.length} Punts • {t.transport_labels[preferences.transport]}
+                            </span>
+                        </div>
+                    </div>
+                    <span className="text-slate-400 text-xl">{isDayMapOpen ? '−' : '+'}</span>
+               </button>
+               
+               {isDayMapOpen && (
+                   <div className="relative w-full h-[300px] bg-slate-100">
+                       <iframe
+                           width="100%"
+                           height="100%"
+                           style={{ border: 0 }}
+                           loading="lazy"
+                           allowFullScreen
+                           referrerPolicy="no-referrer-when-downgrade"
+                           src={embedUrl}
+                           title="Day Map"
+                           className="absolute inset-0"
+                       ></iframe>
+                       {/* Fallback overlay in case API Key doesn't support Maps Embed */}
+                       <div className="absolute bottom-2 right-2 z-10">
+                           <a 
+                               href={`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${encodeURIComponent(waypoints)}&travelmode=${mode}`}
+                               target="_blank" 
+                               rel="noreferrer"
+                               className="bg-white/90 backdrop-blur text-xs font-bold text-blue-600 px-3 py-1.5 rounded shadow-sm border border-slate-200 hover:bg-blue-50"
+                           >
+                               Obrir a Google Maps ↗
+                           </a>
+                       </div>
+                   </div>
+               )}
+          </div>
+      );
   };
   
   const isBookingSource = (url: string) => /thefork|tripadvisor|opentable|reserv|book/.test(url.toLowerCase());
   const getDirectBookingSource = (step: ItineraryStep) => webSources.find(s => (s.title.toLowerCase().includes(step.title.toLowerCase()) || step.title.toLowerCase().includes(s.title.toLowerCase())) && isBookingSource(s.url));
   
-  // Show taxi info if Taxi is selected OR if Mix includes Taxi, or generally show it for everyone as useful info
-  const showTaxiCard = true; // Always useful in this region
+  const showTaxiCard = true; 
 
   return (
     <div className="animate-fade-in space-y-6 relative">
@@ -281,7 +335,8 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
                      </div>
                 </div>
 
-                {renderRouteButton()}
+                {/* Day Map (Visual Summary) */}
+                {renderDayMapEmbed()}
 
                 {/* Print View: All Steps */}
                 <div className="space-y-6 animate-fade-in hidden print:block">
@@ -305,29 +360,38 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
                      ))}
                 </div>
 
-                {/* Interactive View: Visible Steps */}
-                <div className="space-y-5 animate-fade-in print:hidden">
+                {/* Interactive View: Visible Steps with Visual Connector Line */}
+                <div className="space-y-0 relative animate-fade-in print:hidden pl-4 md:pl-0">
+                        {/* Timeline Vertical Line for Desktop */}
+                        <div className="absolute left-6 top-4 bottom-4 w-0.5 bg-slate-200 hidden md:block z-0"></div>
+
                         {visibleSteps.map((step, index) => (
-                                <ItineraryStepCard 
-                                    key={step.id} 
-                                    step={step} 
-                                    index={index} 
-                                    totalSteps={visibleSteps.length}
-                                    transport={preferences.transport}
-                                    theme={preferences.theme}
-                                    language={preferences.language}
-                                    onMoveUp={() => handleMoveStep(step.id, 'up')}
-                                    onMoveDown={() => handleMoveStep(step.id, 'down')}
-                                    onUpdateNotes={(notes) => handleUpdateNotes(step.id, notes)}
-                                    onGenerateImage={handleGenerateImage}
-                                    onGenerateInstructions={handleGenerateInstructions}
-                                    onViewBooking={() => setSelectedBookingStep(step)}
-                                    onFetchNearby={isLikelyAttraction(step) ? () => handleFetchNearby(step.id) : undefined}
-                                    isSpecialEvent={isSpecialEvent(step)}
-                                    hasDirectBooking={!!getDirectBookingSource(step)}
-                                    userRating={ratings[step.title] || 0}
-                                    onRate={(r) => handleRateStep(step.title, r)}
-                                />
+                                <div key={step.id} className="relative mb-6">
+                                    {/* Timeline Dot (Desktop only) */}
+                                    <div className="absolute left-6 top-8 w-4 h-4 bg-white border-2 border-teal-500 rounded-full transform -translate-x-1/2 z-10 hidden md:block shadow-sm"></div>
+                                    
+                                    <div className="md:pl-12">
+                                        <ItineraryStepCard 
+                                            step={step} 
+                                            index={index} 
+                                            totalSteps={visibleSteps.length}
+                                            transport={preferences.transport}
+                                            theme={preferences.theme}
+                                            language={preferences.language}
+                                            onMoveUp={() => handleMoveStep(step.id, 'up')}
+                                            onMoveDown={() => handleMoveStep(step.id, 'down')}
+                                            onUpdateNotes={(notes) => handleUpdateNotes(step.id, notes)}
+                                            onGenerateImage={handleGenerateImage}
+                                            onGenerateInstructions={handleGenerateInstructions}
+                                            onViewBooking={() => setSelectedBookingStep(step)}
+                                            onFetchNearby={isLikelyAttraction(step) ? () => handleFetchNearby(step.id) : undefined}
+                                            isSpecialEvent={isSpecialEvent(step)}
+                                            hasDirectBooking={!!getDirectBookingSource(step)}
+                                            userRating={ratings[step.title] || 0}
+                                            onRate={(r) => handleRateStep(step.title, r)}
+                                        />
+                                    </div>
+                                </div>
                         ))}
                 </div>
             </div>
