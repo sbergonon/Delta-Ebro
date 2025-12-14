@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { UserPreferences, ItineraryResult, Language, SavedItinerary, Restaurant } from './types';
+import { UserPreferences, ItineraryResult, Language, SavedItinerary } from './types';
 import { DEFAULT_PREFERENCES, TRANSLATIONS, THEME_ICONS } from './constants';
-import { generateItinerary, getRestaurantsByCoordinates } from './services/geminiService';
+import { generateItinerary } from './services/geminiService';
 import PreferenceSelector from './components/PreferenceSelector';
 import ResultDisplay from './components/ResultDisplay';
 import Button from './components/Button';
@@ -15,12 +15,6 @@ const App: React.FC = () => {
   const [showSavedTrips, setShowSavedTrips] = useState(false);
   const [savedTrips, setSavedTrips] = useState<SavedItinerary[]>([]);
   
-  // Restaurant Finder State
-  const [showRestaurantModal, setShowRestaurantModal] = useState(false);
-  const [restaurantLoading, setRestaurantLoading] = useState(false);
-  const [nearbyRestaurants, setNearbyRestaurants] = useState<Restaurant[]>([]);
-  const [restaurantError, setRestaurantError] = useState<string | null>(null);
-
   const t = TRANSLATIONS[preferences.language];
 
   // Check for shared itinerary in URL on mount
@@ -106,37 +100,6 @@ const App: React.FC = () => {
       return true; // signal success
   };
 
-  const handleFindRestaurants = () => {
-    setShowRestaurantModal(true);
-    setRestaurantLoading(true);
-    setRestaurantError(null);
-    setNearbyRestaurants([]);
-
-    if (!navigator.geolocation) {
-        setRestaurantError("Geolocation is not supported by your browser.");
-        setRestaurantLoading(false);
-        return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-        async (position) => {
-            try {
-                const { latitude, longitude } = position.coords;
-                const results = await getRestaurantsByCoordinates(latitude, longitude, preferences.language);
-                setNearbyRestaurants(results);
-            } catch (e) {
-                setRestaurantError("Error finding restaurants.");
-            } finally {
-                setRestaurantLoading(false);
-            }
-        },
-        (err) => {
-            setRestaurantError("Unable to retrieve location. Please enable GPS.");
-            setRestaurantLoading(false);
-        }
-    );
-  };
-
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col font-sans overflow-x-hidden">
       
@@ -154,15 +117,7 @@ const App: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
-             {/* Restaurant Finder Button */}
-             <button 
-                onClick={handleFindRestaurants}
-                className="text-xs font-bold text-stone-600 bg-orange-50 hover:bg-orange-100 border border-orange-100 px-1.5 sm:px-3 py-1.5 rounded-full transition-all flex items-center gap-1 sm:gap-2 shadow-sm"
-                title="Buscar Restaurantes Cerca"
-             >
-                <span className="text-sm sm:text-lg">🍽️</span>
-                <span className="hidden sm:inline">Gastro</span>
-             </button>
+             {/* Restaurant Finder Button REMOVED */}
 
              <button 
                 onClick={() => setShowSavedTrips(true)}
@@ -296,80 +251,6 @@ const App: React.FC = () => {
                      <button onClick={() => setShowSavedTrips(false)} className="w-full py-3 text-sm font-bold text-white bg-stone-800 hover:bg-stone-900 rounded-xl transition-colors shadow-lg shadow-stone-200">
                          Tancar
                      </button>
-                 </div>
-             </div>
-          </div>
-      )}
-
-      {/* Restaurant GPS Modal */}
-      {showRestaurantModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col animate-fade-in-up">
-                 <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-orange-50 rounded-t-xl">
-                    <h3 className="font-bold text-lg text-orange-900 flex items-center gap-2">
-                        🍽️ Restaurants a prop
-                    </h3>
-                    <button onClick={() => setShowRestaurantModal(false)} className="text-orange-300 hover:text-orange-600 p-2 bg-white rounded-full shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                 </div>
-                 
-                 <div className="p-6 flex-1 overflow-y-auto">
-                     {restaurantLoading ? (
-                         <div className="flex flex-col items-center justify-center py-8 space-y-4">
-                             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500"></div>
-                             <p className="text-stone-500 text-sm">Localitzant GPS i cercant...</p>
-                         </div>
-                     ) : restaurantError ? (
-                         <div className="text-center py-4">
-                             <p className="text-red-500 mb-4">{restaurantError}</p>
-                             <a 
-                                href="https://www.google.com/maps/search/restaurants/"
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-block bg-orange-500 text-white px-4 py-2 rounded-lg font-bold"
-                             >
-                                Obrir Google Maps
-                             </a>
-                         </div>
-                     ) : nearbyRestaurants.length > 0 ? (
-                         <div className="space-y-4">
-                             {nearbyRestaurants.map((rest, idx) => (
-                                 <div key={idx} className="border border-slate-200 rounded-lg p-3 hover:border-orange-300 transition-colors">
-                                     <div className="flex justify-between items-start">
-                                         <h4 className="font-bold text-stone-800">{rest.name}</h4>
-                                         <span className="bg-orange-100 text-orange-800 text-xs px-2 py-0.5 rounded-full font-bold">
-                                             {rest.rating}
-                                         </span>
-                                     </div>
-                                     <p className="text-xs text-stone-500 mt-1">{rest.cuisine}</p>
-                                     <p className="text-xs text-stone-400 mt-1">{rest.address}</p>
-                                     <a 
-                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rest.name + " " + rest.address)}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="mt-3 block text-center text-xs font-bold text-orange-600 bg-orange-50 py-2 rounded hover:bg-orange-100"
-                                     >
-                                        Com arribar-hi
-                                     </a>
-                                 </div>
-                             ))}
-                             <div className="pt-4 border-t border-slate-100 text-center">
-                                 <a 
-                                     href="https://www.google.com/maps/search/restaurants/"
-                                     target="_blank"
-                                     rel="noreferrer"
-                                     className="text-sm text-stone-500 hover:text-orange-600 underline"
-                                 >
-                                     Veure més resultats a Maps
-                                 </a>
-                             </div>
-                         </div>
-                     ) : (
-                         <div className="text-center text-stone-500">
-                             No s'han trobat resultats propers.
-                         </div>
-                     )}
                  </div>
              </div>
           </div>

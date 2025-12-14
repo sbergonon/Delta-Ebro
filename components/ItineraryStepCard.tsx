@@ -76,7 +76,6 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
   const [areInstructionsOpen, setAreInstructionsOpen] = useState(false);
   const [areNearbyOpen, setAreNearbyOpen] = useState(false);
   const [isLoadingNearby, setIsLoadingNearby] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const hasRetriedGeneration = useRef(false);
   const t = TRANSLATIONS[language];
@@ -97,19 +96,6 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
       if (step.detailedInstructions) setIsGeneratingInstructions(false);
       if (step.nearbyAttractions) setIsLoadingNearby(false);
   }, [step.detailedInstructions, step.nearbyAttractions]);
-
-  let travelMode = 'driving';
-  switch (transport) {
-    case Transport.WALKING: travelMode = 'walking'; break;
-    case Transport.BUS:
-    case Transport.TRAIN:
-    case Transport.MIX: travelMode = 'transit'; break;
-    case Transport.BIKE: travelMode = 'bicycling'; break;
-    case Transport.RIVER:
-    case Transport.CAR: travelMode = 'driving'; break;
-  }
-
-  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${safeTitle}, Tarragona`)}&travelmode=${travelMode}`;
 
   const hasImage = step.imageUrl && !imgError;
   const effectiveTheme = getEffectiveTheme(step, theme);
@@ -358,14 +344,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
 
           {/* Action Footer */}
           <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 md:flex md:flex-wrap gap-2 print:hidden">
-              <a 
-                href={directionsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-blue-100 hover:text-blue-700 px-3 py-2.5 rounded-lg transition-colors"
-              >
-                {t.results.directions_btn}
-              </a>
+              {/* Directions Button REMOVED */}
 
               {showBookingBtn && (
                 <button 

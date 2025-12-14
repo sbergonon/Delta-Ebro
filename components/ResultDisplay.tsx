@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { ItineraryResult, UserPreferences, Transport, ItineraryStep } from '../types';
+import { ItineraryResult, UserPreferences, ItineraryStep } from '../types';
 import { TRANSLATIONS } from '../constants';
 import ItineraryStepCard from './ItineraryStepCard';
-import { generateStepImage, generateStepInstructions, getNearbyAttractions, getApiKeySafe } from '../services/geminiService';
+import { generateStepImage, generateStepInstructions, getNearbyAttractions } from '../services/geminiService';
 
 interface ResultDisplayProps {
   result: ItineraryResult;
@@ -21,7 +21,6 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
   const [isBookingsOpen, setIsBookingsOpen] = useState(false);
   const [isDeltaInfoOpen, setIsDeltaInfoOpen] = useState(false);
   const [isTaxiInfoOpen, setIsTaxiInfoOpen] = useState(false);
-  const [isDayMapOpen, setIsDayMapOpen] = useState(true); 
   const [selectedBookingStep, setSelectedBookingStep] = useState<ItineraryStep | null>(null);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   
@@ -167,155 +166,6 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
         }
       } catch (err) { console.error(err); }
   };
-
-  // Helper to extract clean location names
-  const getStepLocation = (step: ItineraryStep) => {
-      if (!step || !step.title) return "Amposta";
-      let clean = step.title.replace(/^[\d]{1,2}[:.]\d{2}\s*[-–]\s*/, '').trim();
-      clean = clean.replace(/\(.*\)/, '').trim();
-      return `${clean}, Terres de l'Ebre, Spain`;
-  };
-
-  // Logic to calculate active map URL universally
-  const getActiveMapUrl = () => {
-      if (!visibleSteps || visibleSteps.length === 0) return "https://www.google.com/maps/search/Terres+de+l'Ebre";
-      
-      try {
-           const locations = visibleSteps
-              .filter(s => s && (isLikelyAttraction(s) || s.title.toLowerCase().includes('hotel') || s.title.toLowerCase().includes('restaurant')))
-              .map(getStepLocation);
-           
-           if (locations.length === 0) return "https://www.google.com/maps/search/Amposta";
-
-           let origin = "Amposta, Spain";
-           let destination = "Amposta, Spain";
-           let waypoints = "";
-
-           if (locations.length >= 2) {
-               origin = locations[0];
-               destination = locations[locations.length - 1];
-               waypoints = locations.slice(1, -1).join('|');
-           } else if (locations.length === 1) {
-               destination = locations[0];
-           }
-
-           let mode = 'driving';
-           if (preferences.transport === Transport.WALKING) mode = 'walking';
-           else if (preferences.transport === Transport.BIKE) mode = 'bicycling';
-
-           return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}${waypoints ? `&waypoints=${encodeURIComponent(waypoints)}` : ''}&travelmode=${mode}`;
-      } catch (e) {
-          return "https://www.google.com/maps/search/Amposta";
-      }
-  };
-
-  const activeMapUrl = getActiveMapUrl();
-
-  // Logic to generate the Embedded Map URL safely
-  const renderDayMapEmbed = () => {
-      // Robust check: even if no visible steps, if we are in interactive mode (steps > 0), show a generic map card
-      if (!steps || steps.length === 0) return null;
-
-      let embedUrl = "";
-      let locationCount = 0;
-
-      try {
-        // Use visibleSteps if available, otherwise fallback (though visibleSteps should be set)
-        const currentSteps = (visibleSteps && visibleSteps.length > 0) ? visibleSteps : steps;
-        
-        const locations = currentSteps
-            .filter(s => s && (isLikelyAttraction(s) || s.title.toLowerCase().includes('hotel') || s.title.toLowerCase().includes('restaurant')))
-            .map(getStepLocation);
-        
-        locationCount = locations.length;
-
-        if (locations.length >= 1) {
-            let origin = "Amposta, Spain";
-            let destination = "Amposta, Spain";
-            let waypoints = "";
-            
-            if (locations.length >= 2) {
-                 origin = locations[0];
-                 destination = locations[locations.length - 1];
-                 waypoints = locations.slice(1, -1).join('|');
-            } else if (locations.length === 1) {
-                 destination = locations[0];
-            }
-
-            let mode = 'driving';
-            if (preferences.transport === Transport.WALKING) mode = 'walking';
-            else if (preferences.transport === Transport.BIKE) mode = 'bicycling';
-
-            // Use safe key getter
-            const apiKey = getApiKeySafe();
-
-            // Construct Embed URL (requires API key)
-            if (apiKey) {
-                 embedUrl = `https://www.google.com/maps/embed/v1/directions?key=${apiKey}&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}${waypoints ? `&waypoints=${encodeURIComponent(waypoints)}` : ''}&mode=${mode}`;
-            }
-        }
-      } catch (e) {
-          console.error("Map Construction Error", e);
-          // Fallback handled by empty embedUrl
-      }
-
-      return (
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm mb-6 print:break-inside-avoid">
-                <button 
-                    onClick={() => setIsDayMapOpen(!isDayMapOpen)} 
-                    className="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition-colors border-b border-slate-100"
-                >
-                        <div className="flex items-center gap-2">
-                            <span className="text-xl">🗺️</span>
-                            <div className="text-left">
-                                <span className="font-bold text-stone-800 block text-sm sm:text-base">Mapa del Dia {activeDay}</span>
-                                <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
-                                    {locationCount > 0 ? `${locationCount} Punts` : 'Ruta General'} • {t.transport_labels[preferences.transport]}
-                                </span>
-                            </div>
-                        </div>
-                        <span className="text-slate-400 text-xl">{isDayMapOpen ? '−' : '+'}</span>
-                </button>
-                
-                {isDayMapOpen && (
-                    <div className="relative w-full h-[300px] bg-slate-100 group">
-                        {embedUrl ? (
-                             <iframe
-                                width="100%"
-                                height="100%"
-                                style={{ border: 0 }}
-                                loading="lazy"
-                                allowFullScreen
-                                referrerPolicy="no-referrer-when-downgrade"
-                                src={embedUrl}
-                                title="Day Map"
-                                className="absolute inset-0"
-                                onError={(e) => {
-                                    // Iframe error fallback handled visually by overlay
-                                }}
-                            ></iframe>
-                        ) : (
-                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 text-slate-400 opacity-50 bg-[url('https://www.gstatic.com/images/branding/product/2x/maps_96dp.png')] bg-no-repeat bg-center bg-[length:100px_100px] grayscale">
-                             </div>
-                        )}
-                        
-                        {/* Always show the external link button overlay centered if no embed, or bottom if embed exists */}
-                        <div className={`absolute inset-0 flex items-center justify-center z-10 pointer-events-none ${embedUrl ? 'bg-transparent' : 'bg-slate-100/50 backdrop-blur-sm'}`}>
-                            <a 
-                                href={activeMapUrl}
-                                target="_blank" 
-                                rel="noreferrer"
-                                className={`pointer-events-auto bg-white text-sm font-bold text-blue-600 px-6 py-3 rounded-full shadow-lg border border-slate-200 hover:bg-blue-50 flex items-center gap-2 transition-transform hover:scale-105 ${embedUrl ? 'absolute bottom-4 shadow-md px-4 py-2 text-xs opacity-90 hover:opacity-100 translate-y-0' : ''}`}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M16.2 7.8l-2 6.3-6.4 2.1 2-6.3z"></path></svg>
-                                Veure ruta a Google Maps
-                            </a>
-                        </div>
-                    </div>
-                )}
-            </div>
-      );
-  };
   
   const isBookingSource = (url: string) => /thefork|tripadvisor|opentable|reserv|book/.test(url.toLowerCase());
   const getDirectBookingSource = (step: ItineraryStep) => webSources.find(s => (s.title.toLowerCase().includes(step?.title?.toLowerCase() || "") || (step?.title?.toLowerCase() || "").includes(s.title.toLowerCase())) && isBookingSource(s.url));
@@ -392,8 +242,7 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
                     </div>
                 )}
 
-                {/* Day Map - Rendered Safely */}
-                {renderDayMapEmbed()}
+                {/* Day Map REMOVED */}
 
                 {/* Visible Steps */}
                 <div className="space-y-0 relative animate-fade-in print:hidden pl-4 md:pl-0">
@@ -439,20 +288,6 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
             </div>
          )}
       </div>
-
-      {/* Floating Action Button for Map (Bottom Right) */}
-      {steps && steps.length > 0 && (
-          <a
-            href={activeMapUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="fixed bottom-6 right-6 z-40 bg-blue-600 text-white p-3.5 rounded-full shadow-xl hover:bg-blue-700 transition-transform hover:scale-105 flex items-center justify-center gap-2 print:hidden animate-fade-in-up"
-            title="Obrir Mapa a Google Maps"
-            style={{ boxShadow: '0 4px 14px 0 rgba(0, 118, 255, 0.39)' }}
-          >
-            <span className="text-2xl">🗺️</span>
-          </a>
-      )}
 
       {/* Info Sections */}
       <div className="space-y-4 print:hidden">

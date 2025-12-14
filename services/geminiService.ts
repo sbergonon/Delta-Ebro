@@ -150,41 +150,6 @@ export const getNearbyAttractions = async (location: string, language: Language)
     });
 };
 
-export const getRestaurantsByCoordinates = async (lat: number, lng: number, language: Language): Promise<Restaurant[]> => {
-    return retryOperation(async () => {
-        const ai = getAiClient();
-        const langName = language === 'ca' ? 'Catalan' : language === 'es' ? 'Spanish' : 'English';
-        
-        const prompt = `I am at ${lat}, ${lng} in Terres de l'Ebre. Recommend 4 restaurants nearby. Return JSON array with name, cuisine, rating, address. Language: ${langName}.`;
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                tools: [{ googleMaps: {} }],
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            name: { type: Type.STRING },
-                            cuisine: { type: Type.STRING },
-                            rating: { type: Type.STRING },
-                            address: { type: Type.STRING }
-                        },
-                        required: ["name", "cuisine", "rating", "address"]
-                    }
-                }
-            }
-        });
-        
-        const jsonText = response.text;
-        if (jsonText) return JSON.parse(jsonText) as Restaurant[];
-        return [];
-    });
-};
-
 export const generateItinerary = async (prefs: UserPreferences): Promise<ItineraryResult> => {
   return retryOperation(async () => {
       const modelId = 'gemini-2.5-flash';
@@ -247,8 +212,8 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
           model: modelId,
           contents: prompt,
           config: {
-            tools: [{ googleSearch: {} }, { googleMaps: {} }],
-            toolConfig: { retrievalConfig: { latLng: { latitude: 40.7096, longitude: 0.5786 } } }, // Delta Coordinates
+            // REMOVED googleMaps tool to prevent crashes
+            tools: [{ googleSearch: {} }],
             systemInstruction: `Eres un guía experto en el Delta del Ebro, Amposta y Tortosa.`,
             temperature: 0.4,
           },
@@ -320,7 +285,7 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
       if (chunks) {
           chunks.forEach((chunk: any) => {
             if (chunk.web) sources.push({ title: chunk.web.title, url: chunk.web.uri, type: 'web' });
-            if (chunk.maps) sources.push({ title: chunk.maps.title, url: chunk.maps.uri, type: 'map' });
+            // Maps source extraction removed
           });
       }
 
