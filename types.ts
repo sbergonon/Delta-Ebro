@@ -80,6 +80,14 @@ export interface Restaurant {
   address: string;
 }
 
+export interface RestaurantRecommendation {
+  name: string;
+  location: string;
+  phone: string;
+  price: string;
+  specialty: Record<Language, string>;
+}
+
 export interface SavedItinerary {
   id: string;
   name: string;

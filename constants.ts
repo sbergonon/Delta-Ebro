@@ -1,6 +1,5 @@
 
-
-import { Theme, Transport, Language, AccommodationMode } from './types';
+import { Theme, Transport, Language, AccommodationMode, RestaurantRecommendation } from './types';
 
 export const THEME_ICONS: Record<Theme, string> = {
   [Theme.HISTORICAL]: '🏛️',
@@ -135,6 +134,58 @@ export const THEME_POIS: Record<Theme, string[]> = {
   [Theme.CUSTOM]: [] // Populated dynamically
 };
 
+export const RECOMMENDED_RESTAURANTS: RestaurantRecommendation[] = [
+  {
+    name: "L'Algadir del Delta",
+    location: "Poble Nou del Delta",
+    phone: "+34 977 74 45 59",
+    price: "€€-€€€",
+    specialty: { ca: "Arròs i Cuina d'Autor (Bib Gourmand)", es: "Arroz y Cocina de Autor (Bib Gourmand)", en: "Rice & Signature Cuisine (Bib Gourmand)" }
+  },
+  {
+    name: "Restaurant L'Estany - Casa de Fusta",
+    location: "Delta de l'Ebre (Encanyissada)",
+    phone: "+34 977 26 10 26",
+    price: "€€",
+    specialty: { ca: "Cuina Tradicional i Arrossos", es: "Cocina Tradicional y Arroces", en: "Traditional Cuisine & Rice" }
+  },
+  {
+    name: "Can Batiste",
+    location: "La Ràpita",
+    phone: "+34 977 74 04 62",
+    price: "€€€",
+    specialty: { ca: "Marisc i Peix Fresc", es: "Marisco y Pescado Fresco", en: "Seafood & Fresh Fish" }
+  },
+  {
+    name: "Bueso Restaurant",
+    location: "Amposta",
+    phone: "+34 977 70 23 48",
+    price: "€€",
+    specialty: { ca: "Cuina de Mercat", es: "Cocina de Mercado", en: "Market Cuisine" }
+  },
+  {
+    name: "Restaurant Parc",
+    location: "Tortosa",
+    phone: "+34 977 44 48 66",
+    price: "€€-€€€",
+    specialty: { ca: "Menú Degustació", es: "Menú Degustación", en: "Tasting Menu" }
+  },
+  {
+    name: "Molí de Xim",
+    location: "Miravet",
+    phone: "+34 977 40 71 36",
+    price: "€€",
+    specialty: { ca: "Cuina tradicional en un molí d'oli", es: "Cocina tradicional en un molino", en: "Traditional cuisine in an oil mill" }
+  },
+  {
+    name: "Can Manel",
+    location: "Les Cases d'Alcanar",
+    phone: "+34 977 73 70 60",
+    price: "€€-€€€",
+    specialty: { ca: "Els millors llagostins", es: "Los mejores langostinos", en: "The best prawns" }
+  }
+];
+
 interface Translation {
   title: string;
   subtitle: string;
@@ -218,6 +269,7 @@ interface Translation {
     copy_step: string;
     copied: string;
     saved_success: string;
+    restaurants_title: string;
   };
   errors: {
     generic: string;
@@ -350,7 +402,8 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       no_nearby_found: "No s'han trobat llocs destacats a prop.",
       copy_step: "Copiar",
       copied: "Copiat!",
-      saved_success: "Viatge guardat correctament!"
+      saved_success: "Viatge guardat correctament!",
+      restaurants_title: "Gastronomia Recomanada"
     },
     errors: {
       generic: "S'ha produït un error inesperat.",
@@ -378,7 +431,7 @@ Més enllà del Delta, les **Terres de l'Ebre** ofereixen un patrimoni excepcion
         subtitle: "Horarios i Mobilitat",
         content: `
 *   **🕒 Horarios de Museus:** La majoria de museus i monuments (Castell de Miravet, Catedral de Tortosa) **TANQUEN ELS DILLUNS**. Planifica activitats de natura per als dilluns.
-*   **🚆 Tren i Bus:** L'estació de l'Aldea connecta amb Barcelona/València. Per moure's entre pobles (Tortosa-Amposta-La Ràpita), el bus HIFE es l'opció principal.
+*   **🚆 Tren i Bus:** L'estació de l'Aldea connecta amb Barcelona/València. Per moure's entre pobles (Tortosa-Amposta-La Ràpita), el bus HIFE és l'opció principal.
 *   **🛳️ Riu:** Els vaixells turístics tenen horaris estacionals. A l'hivern la freqüència baixa molt.
 *   **🍽️ Dinar:** A l'interior (Terra Alta/Ribera), els horaris de dinar són estrictes (13:30-15:00). Reserva sempre en cap de setmana.
 `
@@ -475,7 +528,7 @@ Aquí tens contactes clau per moure't per les Terres de l'Ebre:
       web_info: "Web Info",
       book_table: "Reservar Mesa",
       search_tickets: "Buscar Tickets",
-      verify_warning: "* Important: Verifica siempre los horarios. Muchos museos cierran los lunes.",
+      verify_warning: "* Importante: Verifica siempre los horarios. Muchos museos cierran los lunes.",
       detected_places: "Puntos de interés detectados",
       verified_sources: "Fuentes Web Verificadas",
       view_map: "Ver en app",
@@ -512,7 +565,8 @@ Aquí tens contactes clau per moure't per les Terres de l'Ebre:
       no_nearby_found: "No se han encontrado lugares destacados cerca.",
       copy_step: "Copiar",
       copied: "¡Copiado!",
-      saved_success: "¡Viaje guardado correctamente!"
+      saved_success: "¡Viaje guardado correctamente!",
+      restaurants_title: "Gastronomía Recomendada"
     },
     errors: {
       generic: "Ocurrió un error inesperado.",
@@ -674,7 +728,8 @@ Contactos clave para moverte por las Terres de l'Ebre:
       no_nearby_found: "No featured places found nearby.",
       copy_step: "Copy",
       copied: "Copied!",
-      saved_success: "Trip saved successfully!"
+      saved_success: "Trip saved successfully!",
+      restaurants_title: "Recommended Dining"
     },
     errors: {
       generic: "An unexpected error occurred.",
