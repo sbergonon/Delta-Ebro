@@ -17,6 +17,7 @@ export enum Transport {
   RIVER = 'river',
   TRAIN = 'train',
   BIKE = 'bike',
+  TAXI = 'taxi',
   MIX = 'mix'
 }
 

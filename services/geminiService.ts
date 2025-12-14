@@ -287,6 +287,14 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
       // LOGISTICA DE TRANSPORTE REGIONAL
       if (prefs.transport === Transport.RIVER) {
          transportInstruction = "Transporte Fluvial: Incluye rutas en barco (Miravet, Delta). Para conectar entre pueblos (Amposta-Tortosa), sugiere Barco si existe línea regular, o Bus/Taxi como alternativa para llegar al embarcadero.";
+      } else if (prefs.transport === Transport.TAXI) {
+         transportInstruction = `
+         TRANSPORTE: TAXI (PRIVADO).
+         El usuario se moverá exclusivamente en Taxi.
+         1. Asume tiempos de viaje rápidos (como en coche), sin esperas de transporte público.
+         2. Puedes ser más flexible con los horarios ya que no dependen de bus/tren.
+         3. ADVERTENCIA: Recuerda al usuario que viajes largos (ej. a Miravet) pueden ser costosos.
+         `;
       } else if (prefs.transport === Transport.MIX) {
          if (prefs.customTransports && prefs.customTransports.length > 0) {
              const mixLabels = prefs.customTransports.map(tr => t.transports[tr]).join(", ");
@@ -298,6 +306,7 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<Itinera
              2. Si hay que ir a Miravet: Sugiere Coche o combinación Tren+Taxi (Móra la Nova).
              3. DENTRO de los cascos urbanos (Tortosa/Amposta): Sugiere ir "A PIE".
              4. Delta: Sugiere "BICICLETA" o Coche/Bus.
+             5. Si han seleccionado TAXI en el mix, úsalo para conexiones difíciles (ej. ir a un restaurante lejano en el Delta).
              `;
          } else {
              transportInstruction = "Uso combinado de transporte. Sugiere Tren/Bus para moverte entre Amposta y Tortosa, y A PIE dentro de las ciudades.";

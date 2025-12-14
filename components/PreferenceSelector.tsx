@@ -328,7 +328,7 @@ const PreferenceSelector: React.FC<PreferenceSelectorProps> = ({ prefs, onChange
                 <span className="bg-teal-100 text-teal-800 p-1.5 rounded-lg text-sm">3</span>
                 {t.section_3_title}
               </h3>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {Object.values(Transport).map((tr) => (
                   <button
                     key={tr}

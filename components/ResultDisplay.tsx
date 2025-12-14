@@ -20,6 +20,7 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
   const [showToast, setShowToast] = useState<{msg: string, type: 'success' | 'info'} | null>(null);
   const [isBookingsOpen, setIsBookingsOpen] = useState(false);
   const [isDeltaInfoOpen, setIsDeltaInfoOpen] = useState(false);
+  const [isTaxiInfoOpen, setIsTaxiInfoOpen] = useState(false);
   const [selectedBookingStep, setSelectedBookingStep] = useState<ItineraryStep | null>(null);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   
@@ -198,6 +199,9 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
   
   const isBookingSource = (url: string) => /thefork|tripadvisor|opentable|reserv|book/.test(url.toLowerCase());
   const getDirectBookingSource = (step: ItineraryStep) => webSources.find(s => (s.title.toLowerCase().includes(step.title.toLowerCase()) || step.title.toLowerCase().includes(s.title.toLowerCase())) && isBookingSource(s.url));
+  
+  // Show taxi info if Taxi is selected OR if Mix includes Taxi, or generally show it for everyone as useful info
+  const showTaxiCard = true; // Always useful in this region
 
   return (
     <div className="animate-fade-in space-y-6 relative">
@@ -334,8 +338,24 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
          )}
       </div>
 
-      {/* Bookings & Info Sections (Simplified for brevity, keep logic same as before but wrap in container) */}
+      {/* Bookings & Info Sections */}
       <div className="space-y-4 print:hidden">
+           
+           {/* Taxi Info Card */}
+           {showTaxiCard && (
+               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                   <button onClick={() => setIsTaxiInfoOpen(!isTaxiInfoOpen)} className="w-full flex justify-between items-center p-4 bg-yellow-50 hover:bg-yellow-100 transition-colors">
+                        <span className="font-bold text-yellow-900 flex gap-2"><span>🚖</span> {t.taxi_info.title}</span>
+                        <span className="text-yellow-700 text-xl">{isTaxiInfoOpen ? '-' : '+'}</span>
+                   </button>
+                   {isTaxiInfoOpen && (
+                        <div className="p-5 prose prose-sm max-w-none bg-yellow-50/30">
+                            <ReactMarkdown>{t.taxi_info.content}</ReactMarkdown>
+                        </div>
+                   )}
+               </div>
+           )}
+
            {/* Bookings */}
            {bookingCandidates.length > 0 && (
                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -369,7 +389,7 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
            {t.results.verify_warning}
       </div>
 
-      {/* Simplified Booking Modal Logic (Keep same structure as before but add fixed positioning fixes) */}
+      {/* Simplified Booking Modal Logic */}
       {selectedBookingStep && (
          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm animate-fade-in print:hidden">
             <div className="bg-white w-full sm:max-w-lg sm:rounded-xl rounded-t-xl max-h-[90vh] flex flex-col animate-fade-in-up">

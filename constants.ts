@@ -17,6 +17,7 @@ export const TRANSPORT_ICONS: Record<Transport, string> = {
   [Transport.RIVER]: '🛳️',
   [Transport.TRAIN]: '🚆',
   [Transport.BIKE]: '🚲',
+  [Transport.TAXI]: '🚖',
   [Transport.MIX]: '🔀'
 };
 
@@ -231,6 +232,10 @@ interface Translation {
     subtitle: string;
     content: string;
   };
+  taxi_info: {
+      title: string;
+      content: string;
+  }
 }
 
 export const TRANSLATIONS: Record<Language, Translation> = {
@@ -283,6 +288,7 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       [Transport.RIVER]: "Vaixell / Transport Fluvial",
       [Transport.TRAIN]: "Tren (Rodalies/Mitja Distància)",
       [Transport.BIKE]: "Bicicleta / Via Verda",
+      [Transport.TAXI]: "Taxi (Privat)",
       [Transport.MIX]: "Mix / Combinat"
     },
     accommodations: {
@@ -325,6 +331,7 @@ export const TRANSLATIONS: Record<Language, Translation> = {
         [Transport.RIVER]: "Fluvial",
         [Transport.TRAIN]: "Tren",
         [Transport.BIKE]: "Bici",
+        [Transport.TAXI]: "Taxi",
         [Transport.MIX]: "Combinat"
       },
       view_booking_btn: "Reservar",
@@ -373,6 +380,21 @@ Més enllà del Delta, les **Terres de l'Ebre** ofereixen un patrimoni excepcion
 *   **🚆 Tren i Bus:** L'estació de l'Aldea connecta amb Barcelona/València. Per moure's entre pobles (Tortosa-Amposta-La Ràpita), el bus HIFE és l'opció principal.
 *   **🛳️ Riu:** Els vaixells turístics tenen horaris estacionals. A l'hivern la freqüència baixa molt.
 *   **🍽️ Dinar:** A l'interior (Terra Alta/Ribera), els horaris de dinar són estrictes (13:30-15:00). Reserva sempre en cap de setmana.
+`
+    },
+    taxi_info: {
+        title: "🚖 Taxis i Tarifes Aprox.",
+        content: `
+*   **Amposta:** Radio Taxi Amposta (+34 977 70 01 12)
+*   **Tortosa:** Servitaxi Tortosa (+34 977 44 30 30)
+*   **Estació Tren (l'Aldea):** Parada sempre disponible a l'arribada de trens.
+
+**💰 Preus Estimats (Trajecte d'anada):**
+*   Amposta ↔ Tortosa: ~25-30€
+*   Amposta ↔ Estació l'Aldea: ~15-18€
+*   Amposta ↔ Miravet: ~60-70€
+*   Amposta ↔ Poble Nou (Delta): ~25-30€
+*   Amposta ↔ Platja Trabucador: ~35-40€
 `
     }
   },
@@ -425,6 +447,7 @@ Més enllà del Delta, les **Terres de l'Ebre** ofereixen un patrimoni excepcion
       [Transport.RIVER]: "Barco / Transporte Fluvial",
       [Transport.TRAIN]: "Tren (Rodalies/Media Distancia)",
       [Transport.BIKE]: "Bicicleta / Vía Verde",
+      [Transport.TAXI]: "Taxi (Privado)",
       [Transport.MIX]: "Mix / Combinado"
     },
     accommodations: {
@@ -467,6 +490,7 @@ Més enllà del Delta, les **Terres de l'Ebre** ofereixen un patrimoni excepcion
         [Transport.RIVER]: "Fluvial",
         [Transport.TRAIN]: "Tren",
         [Transport.BIKE]: "Bici",
+        [Transport.TAXI]: "Taxi",
         [Transport.MIX]: "Combinado"
       },
       view_booking_btn: "Reservar",
@@ -515,6 +539,21 @@ Más allá del Delta, las **Terres de l'Ebre** ofrecen un patrimonio excepcional
 *   **🚆 Tren y Bus:** La estación de l'Aldea conecta con Barcelona/Valencia. Para moverse entre pueblos (Tortosa-Amposta-La Ràpita), el bus HIFE es la opción principal.
 *   **🛳️ Río:** Los barcos turísticos tienen horarios estacionales. En invierno la frecuencia baja mucho.
 *   **🍽️ Comida:** En el interior (Terra Alta/Ribera), los horarios de comida son estrictos (13:30-15:00). Reserva siempre en fin de semana.
+`
+    },
+    taxi_info: {
+        title: "🚖 Taxis y Tarifas Aprox.",
+        content: `
+*   **Amposta:** Radio Taxi Amposta (+34 977 70 01 12)
+*   **Tortosa:** Servitaxi Tortosa (+34 977 44 30 30)
+*   **Estación Tren (l'Aldea):** Parada siempre disponible a la llegada de trenes.
+
+**💰 Precios Estimados (Trayecto de ida):**
+*   Amposta ↔ Tortosa: ~25-30€
+*   Amposta ↔ Estación l'Aldea: ~15-18€
+*   Amposta ↔ Miravet: ~60-70€
+*   Amposta ↔ Poble Nou (Delta): ~25-30€
+*   Amposta ↔ Playa Trabucador: ~35-40€
 `
     }
   },
@@ -567,6 +606,7 @@ Más allá del Delta, las **Terres de l'Ebre** ofrecen un patrimonio excepcional
       [Transport.RIVER]: "Boat / River Transport",
       [Transport.TRAIN]: "Train (Regional/Mid-distance)",
       [Transport.BIKE]: "Bicycle / Green Way",
+      [Transport.TAXI]: "Taxi (Private)",
       [Transport.MIX]: "Mix / Combined"
     },
     accommodations: {
@@ -609,6 +649,7 @@ Más allá del Delta, las **Terres de l'Ebre** ofrecen un patrimonio excepcional
         [Transport.RIVER]: "River",
         [Transport.TRAIN]: "Train",
         [Transport.BIKE]: "Bike",
+        [Transport.TAXI]: "Taxi",
         [Transport.MIX]: "Combined"
       },
       view_booking_btn: "Book",
@@ -657,6 +698,21 @@ Beyond the Delta, **Terres de l'Ebre** offers exceptional heritage upriver:
 *   **🚆 Train & Bus:** L'Aldea station connects with Barcelona/Valencia. To move between towns (Tortosa-Amposta-La Ràpita), the HIFE bus is the main option.
 *   **🛳️ River:** Tourist boats have seasonal schedules. In winter, frequency drops significantly.
 *   **🍽️ Dining:** In the interior (Terra Alta/Ribera), lunch hours are strict (1:30 PM - 3:00 PM). Always book on weekends.
+`
+    },
+    taxi_info: {
+        title: "🚖 Taxis & Approx Fares",
+        content: `
+*   **Amposta:** Radio Taxi Amposta (+34 977 70 01 12)
+*   **Tortosa:** Servitaxi Tortosa (+34 977 44 30 30)
+*   **Train Station (l'Aldea):** Taxi rank available at train arrivals.
+
+**💰 Estimated Fares (One way):**
+*   Amposta ↔ Tortosa: ~25-30€
+*   Amposta ↔ Station l'Aldea: ~15-18€
+*   Amposta ↔ Miravet: ~60-70€
+*   Amposta ↔ Poble Nou (Delta): ~25-30€
+*   Amposta ↔ Trabucador Beach: ~35-40€
 `
     }
   }
