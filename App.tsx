@@ -142,35 +142,35 @@ const App: React.FC = () => {
       
       {/* Navbar */}
       <header className="bg-white border-b border-stone-200 sticky top-0 z-30 print:hidden shadow-sm">
-        <div className="max-w-3xl mx-auto px-3 sm:px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group shrink-0" onClick={handleReset}>
+        <div className="max-w-3xl mx-auto px-2 sm:px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-1 sm:gap-2 cursor-pointer group shrink-0" onClick={handleReset}>
             <span className="text-xl sm:text-2xl group-hover:scale-110 transition-transform">🌾</span>
             <div className="flex flex-col">
-                <h1 className="font-bold text-base sm:text-xl tracking-tight text-stone-800 leading-none">
+                <h1 className="font-bold text-sm sm:text-xl tracking-tight text-stone-800 leading-none">
                 Amposta<span className="text-teal-600">Exp</span>
                 </h1>
-                <span className="text-[9px] sm:text-[10px] text-stone-400 font-mono tracking-widest uppercase">v2.1 AI</span>
+                <span className="text-[8px] sm:text-[10px] text-stone-400 font-mono tracking-widest uppercase">v2.1 AI</span>
             </div>
           </div>
           
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-3 shrink-0">
              {/* Restaurant Finder Button */}
              <button 
                 onClick={handleFindRestaurants}
-                className="text-xs font-bold text-stone-600 bg-orange-50 hover:bg-orange-100 border border-orange-100 px-2 sm:px-3 py-1.5 rounded-full transition-all flex items-center gap-1 sm:gap-2 shadow-sm"
+                className="text-xs font-bold text-stone-600 bg-orange-50 hover:bg-orange-100 border border-orange-100 px-1.5 sm:px-3 py-1.5 rounded-full transition-all flex items-center gap-1 sm:gap-2 shadow-sm"
                 title="Buscar Restaurantes Cerca"
              >
-                <span className="text-base sm:text-lg">🍽️</span>
+                <span className="text-sm sm:text-lg">🍽️</span>
                 <span className="hidden sm:inline">Gastro</span>
              </button>
 
              <button 
                 onClick={() => setShowSavedTrips(true)}
-                className="text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-100 px-2 sm:px-3 py-1.5 rounded-full transition-all flex items-center gap-1 sm:gap-2 shadow-sm"
+                className="text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-100 px-1.5 sm:px-3 py-1.5 rounded-full transition-all flex items-center gap-1 sm:gap-2 shadow-sm"
              >
-                <span className="text-base sm:text-lg">📂</span>
+                <span className="text-sm sm:text-lg">📂</span>
                 <span className="hidden sm:inline">{t.saved_trips_btn}</span>
-                <span className="bg-teal-200 text-teal-800 px-1.5 rounded-md text-[10px]">{savedTrips.length}</span>
+                <span className="bg-teal-200 text-teal-800 px-1.5 rounded-md text-[9px] sm:text-[10px]">{savedTrips.length}</span>
              </button>
 
              <div className="flex bg-stone-100 p-0.5 sm:p-1 rounded-lg">
