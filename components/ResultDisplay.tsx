@@ -196,9 +196,15 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
 
         // Use safe key getter
         const apiKey = getApiKeySafe();
-        if (!apiKey) return null;
 
-        const embedUrl = `https://www.google.com/maps/embed/v1/directions?key=${apiKey}&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${encodeURIComponent(waypoints)}&mode=${mode}`;
+        // Construct Universal Google Maps URL (works without API key)
+        const externalMapUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${encodeURIComponent(waypoints)}&travelmode=${mode}`;
+
+        // Construct Embed URL (requires API key)
+        let embedUrl = "";
+        if (apiKey) {
+             embedUrl = `https://www.google.com/maps/embed/v1/directions?key=${apiKey}&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${encodeURIComponent(waypoints)}&mode=${mode}`;
+        }
 
         return (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm mb-6 print:break-inside-avoid">
@@ -219,18 +225,37 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
                 </button>
                 
                 {isDayMapOpen && (
-                    <div className="relative w-full h-[300px] bg-slate-100">
-                        <iframe
-                            width="100%"
-                            height="100%"
-                            style={{ border: 0 }}
-                            loading="lazy"
-                            allowFullScreen
-                            referrerPolicy="no-referrer-when-downgrade"
-                            src={embedUrl}
-                            title="Day Map"
-                            className="absolute inset-0"
-                        ></iframe>
+                    <div className="relative w-full h-[300px] bg-slate-100 group">
+                        {embedUrl ? (
+                             <iframe
+                                width="100%"
+                                height="100%"
+                                style={{ border: 0 }}
+                                loading="lazy"
+                                allowFullScreen
+                                referrerPolicy="no-referrer-when-downgrade"
+                                src={embedUrl}
+                                title="Day Map"
+                                className="absolute inset-0"
+                            ></iframe>
+                        ) : (
+                             <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-slate-400">
+                                 <span className="text-4xl opacity-20">🗺️</span>
+                             </div>
+                        )}
+                        
+                        {/* Always show the external link button overlay */}
+                        <div className="absolute bottom-4 left-0 right-0 flex justify-center z-10 pointer-events-none">
+                            <a 
+                                href={externalMapUrl}
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="pointer-events-auto bg-white/95 backdrop-blur text-sm font-bold text-blue-600 px-4 py-2.5 rounded-full shadow-md border border-slate-200 hover:bg-blue-50 flex items-center gap-2 transition-transform hover:scale-105"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M16.2 7.8l-2 6.3-6.4 2.1 2-6.3z"></path></svg>
+                                Veure ruta a Google Maps
+                            </a>
+                        </div>
                     </div>
                 )}
             </div>
