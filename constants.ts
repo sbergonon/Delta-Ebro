@@ -270,6 +270,7 @@ interface Translation {
     copied: string;
     saved_success: string;
     restaurants_title: string;
+    report_issue: string;
   };
   errors: {
     generic: string;
@@ -403,7 +404,8 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       copy_step: "Copiar",
       copied: "Copiat!",
       saved_success: "Viatge guardat correctament!",
-      restaurants_title: "Gastronomia Recomanada"
+      restaurants_title: "Gastronomia Recomanada",
+      report_issue: "Informar d'un error"
     },
     errors: {
       generic: "S'ha produït un error inesperat.",
@@ -566,7 +568,8 @@ Aquí tens contactes clau per moure't per les Terres de l'Ebre:
       copy_step: "Copiar",
       copied: "¡Copiado!",
       saved_success: "¡Viaje guardado correctamente!",
-      restaurants_title: "Gastronomía Recomendada"
+      restaurants_title: "Gastronomía Recomendada",
+      report_issue: "Reportar un problema"
     },
     errors: {
       generic: "Ocurrió un error inesperado.",
@@ -729,7 +732,8 @@ Contactos clave para moverte por las Terres de l'Ebre:
       copy_step: "Copy",
       copied: "Copied!",
       saved_success: "Trip saved successfully!",
-      restaurants_title: "Recommended Dining"
+      restaurants_title: "Recommended Dining",
+      report_issue: "Report issue"
     },
     errors: {
       generic: "An unexpected error occurred.",

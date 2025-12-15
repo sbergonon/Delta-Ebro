@@ -16,19 +16,32 @@ interface ResultDisplayProps {
 // Helper to parse time strings into comparable minutes from midnight
 const parseTime = (timeStr: string): number => {
     if (!timeStr) return 9999;
-    const lower = timeStr.toLowerCase().trim();
     
-    // Check for HH:MM format first (e.g. 09:00, 9:30, 14:00, 9h30)
-    const timeMatch = lower.match(/(\d{1,2})[:h.](\d{2})/);
-    if (timeMatch) {
-        let h = parseInt(timeMatch[1]);
-        const m = parseInt(timeMatch[2]);
+    // Clean string: split ranges like "10:00 - 12:00" and take the first part
+    const cleanStr = timeStr.split('-')[0].trim();
+    const lower = cleanStr.toLowerCase();
+    
+    // 1. Check for HH:MM format (e.g. 09:00, 9:30, 14:00, 9h30, 9.30)
+    const hhmmMatch = lower.match(/(\d{1,2})[:h.](\d{2})/);
+    if (hhmmMatch) {
+        let h = parseInt(hhmmMatch[1]);
+        const m = parseInt(hhmmMatch[2]);
         if (lower.includes('pm') && h < 12) h += 12;
         if (lower.includes('am') && h === 12) h = 0;
         return h * 60 + m;
     }
 
-    // Check for keywords
+    // 2. Check for simple Hour format with AM/PM (e.g. 9am, 10 PM, 2pm)
+    const hourMatch = lower.match(/(\d{1,2})\s*(am|pm)/);
+    if (hourMatch) {
+        let h = parseInt(hourMatch[1]);
+        const period = hourMatch[2];
+        if (period === 'pm' && h < 12) h += 12;
+        if (period === 'am' && h === 12) h = 0;
+        return h * 60;
+    }
+
+    // 3. Keywords
     if (lower.includes('esmorzar') || lower.includes('desayuno') || lower.includes('breakfast')) return 8 * 60;
     if (lower.includes('morning') || lower.includes('matí') || lower.includes('mañana')) return 9 * 60;
     if (lower.includes('migdia') || lower.includes('mediodía') || lower.includes('noon') || lower.includes('lunch') || lower.includes('dinar') || lower.includes('comida')) return 13 * 60 + 30;
@@ -37,6 +50,12 @@ const parseTime = (timeStr: string): number => {
     if (lower.includes('night') || lower.includes('nit')) return 22 * 60;
     
     return 9999;
+};
+
+// Helper to extract numeric day from string "Day 1", "Dia 2", "1", etc.
+const getDayNum = (d: string) => {
+    const match = d.match(/\d+/);
+    return match ? parseInt(match[0]) : 999;
 };
 
 const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onReset, onSave }) => {
@@ -60,8 +79,8 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
       // Sort steps chronologically
       const sortedSteps = [...result.steps].sort((a, b) => {
           // First by Day
-          const dayA = parseInt(a.day) || 999;
-          const dayB = parseInt(b.day) || 999;
+          const dayA = getDayNum(a.day);
+          const dayB = getDayNum(b.day);
           if (dayA !== dayB) return dayA - dayB;
           
           // Then by Time
@@ -401,8 +420,14 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, preferences, onRe
            )}
       </div>
       
-      <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 print:hidden text-center text-xs text-slate-400">
-           {t.results.verify_warning}
+      <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 print:hidden text-center text-xs text-slate-400 flex flex-col items-center gap-2">
+           <p>{t.results.verify_warning}</p>
+           <a
+             href={`mailto:hola@ampostaexplorer.ai?subject=${encodeURIComponent("Issue with Amposta Explorer Itinerary")}`}
+             className="text-slate-400 hover:text-red-500 transition-colors underline decoration-slate-300 hover:decoration-red-300 underline-offset-2"
+           >
+             {t.results.report_issue}
+           </a>
       </div>
 
       {selectedBookingStep && (

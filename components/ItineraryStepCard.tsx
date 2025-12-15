@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ItineraryStep, Transport, Theme, Language } from '../types';
-import { THEME_ICONS, TRANSLATIONS } from '../constants';
+import { THEME_ICONS, TRANSLATIONS, POI_LOCATIONS } from '../constants';
 
 interface ItineraryStepCardProps {
   step: ItineraryStep;
@@ -173,6 +173,7 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
     : "bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col md:flex-row group h-full md:min-h-[320px]";
 
   const showBookingBtn = isBookable || hasDirectBooking;
+  const poiLocation = POI_LOCATIONS[safeTitle] || "";
 
   return (
     <>
@@ -344,7 +345,38 @@ const ItineraryStepCard: React.FC<ItineraryStepCardProps> = ({
 
           {/* Action Footer */}
           <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 md:flex md:flex-wrap gap-2 print:hidden">
-              {/* Directions Button REMOVED */}
+              
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeTitle + " Terres de l'Ebre")}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center gap-2 text-xs font-bold px-3 py-2.5 rounded-lg transition-colors bg-blue-50 text-blue-700 hover:bg-blue-100"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 20l-5 5-5-5"></path><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
+                {t.results.directions_btn}
+              </a>
+
+              {transport === Transport.BUS && (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeTitle + " " + poiLocation + " bus stop")}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-2 text-xs font-bold px-3 py-2.5 rounded-lg transition-colors bg-stone-100 text-stone-700 hover:bg-stone-200"
+                  >
+                    <span>🚌</span> {t.results.check_bus_stop}
+                  </a>
+              )}
+
+              {transport === Transport.RIVER && (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeTitle + " " + poiLocation + " embarcador river pier")}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-2 text-xs font-bold px-3 py-2.5 rounded-lg transition-colors bg-blue-100 text-blue-800 hover:bg-blue-200"
+                  >
+                    <span>🛳️</span> {t.results.check_river_pier}
+                  </a>
+              )}
 
               {showBookingBtn && (
                 <button 

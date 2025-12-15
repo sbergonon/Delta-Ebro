@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { UserPreferences, Theme, Transport, AccommodationMode } from '../types';
 import { THEME_ICONS, TRANSPORT_ICONS, TRANSLATIONS, THEME_POIS, POI_LOCATIONS } from '../constants';
@@ -93,7 +93,17 @@ const PreferenceSelector: React.FC<PreferenceSelectorProps> = ({ prefs, onChange
       return Array.from(locations).sort();
   }, [allPotentialPOIs]);
 
-  // 3. Group POIs by location, respecting the active filter
+  // 3. Calculate counts for each location
+  const locationCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    allPotentialPOIs.forEach(poi => {
+      const loc = POI_LOCATIONS[poi] || "Altres / General";
+      counts[loc] = (counts[loc] || 0) + 1;
+    });
+    return counts;
+  }, [allPotentialPOIs]);
+
+  // 4. Group POIs by location, respecting the active filter
   const groupedPOIs = useMemo(() => {
       const groups: Record<string, string[]> = {};
       allPotentialPOIs.forEach(poi => {
@@ -109,6 +119,13 @@ const PreferenceSelector: React.FC<PreferenceSelectorProps> = ({ prefs, onChange
       });
       return groups;
   }, [allPotentialPOIs, activeLocationFilter]);
+
+  // Reset filter if the selected location is no longer available
+  useEffect(() => {
+      if (activeLocationFilter !== 'ALL' && !availableLocations.includes(activeLocationFilter)) {
+          setActiveLocationFilter('ALL');
+      }
+  }, [availableLocations, activeLocationFilter]);
 
   const hasPOIs = allPotentialPOIs.length > 0;
 
@@ -242,25 +259,31 @@ const PreferenceSelector: React.FC<PreferenceSelectorProps> = ({ prefs, onChange
                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 max-w-full">
                            <button
                                onClick={() => setActiveLocationFilter('ALL')}
-                               className={`text-[10px] uppercase font-bold px-3 py-1.5 rounded-md border whitespace-nowrap transition-colors ${
+                               className={`text-[10px] uppercase font-bold px-3 py-1.5 rounded-md border whitespace-nowrap transition-colors flex items-center gap-1 ${
                                    activeLocationFilter === 'ALL'
                                    ? 'bg-stone-600 text-white border-stone-600'
                                    : 'bg-white text-stone-500 border-slate-200 hover:bg-stone-100'
                                }`}
                            >
                                ALL
+                               <span className={`px-1.5 py-0.5 rounded text-[9px] ${activeLocationFilter === 'ALL' ? 'bg-stone-500 text-white' : 'bg-stone-100 text-stone-500'}`}>
+                                 {allPotentialPOIs.length}
+                               </span>
                            </button>
                            {availableLocations.map(loc => (
                                <button
                                    key={loc}
                                    onClick={() => setActiveLocationFilter(loc)}
-                                   className={`text-[10px] uppercase font-bold px-3 py-1.5 rounded-md border whitespace-nowrap transition-colors ${
+                                   className={`text-[10px] uppercase font-bold px-3 py-1.5 rounded-md border whitespace-nowrap transition-colors flex items-center gap-1 ${
                                        activeLocationFilter === loc
                                        ? 'bg-teal-600 text-white border-teal-600'
                                        : 'bg-white text-slate-500 border-slate-200 hover:text-teal-600 hover:border-teal-200'
                                    }`}
                                >
                                    {loc}
+                                   <span className={`px-1.5 py-0.5 rounded text-[9px] ${activeLocationFilter === loc ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                     {locationCounts[loc] || 0}
+                                   </span>
                                </button>
                            ))}
                        </div>
